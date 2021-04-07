@@ -37,6 +37,7 @@
     "morgan": "1.9.1",
     "pbf": "3.2.1",
     "proj4": "2.6.0",
+    "promise.allsettled": "1.0.4",
     "request": "2.88.2",
     "sharp": "0.26.2",
     "tileserver-gl-styles": "2.0.0"

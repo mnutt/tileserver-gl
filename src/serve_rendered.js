@@ -23,6 +23,7 @@ const proj4 = require('proj4');
 const request = require('request');
 
 const utils = require('./utils');
+const markers = require('./markers');
 
 const FLOAT_PATTERN = '[+-]?(?:\\d+|\\d+\.?\\d+)';
 const httpTester = /^(http(s)?:)?\/\//;
@@ -180,6 +181,38 @@ const renderOverlay = (z, x, y, bearing, pitch, w, h, scale,
   return canvas.toBuffer();
 };
 
+const renderMarkersOverlay = (z, x, y, bearing, pitch, w, h, scale, markerList) => {
+  if (!markerList || !markerList.length) {
+    return null;
+  }
+
+  const center = georeferenceMapCenter(x, y, z, h);
+
+  const canvas = createCanvas(scale * w, scale * h);
+  const ctx = canvas.getContext('2d');
+  ctx.scale(scale, scale);
+  if (bearing) {
+    ctx.translate(w / 2, h / 2);
+    ctx.rotate(-bearing / 180 * Math.PI);
+    ctx.translate(-center[0], -center[1]);
+  } else {
+    ctx.translate(-center[0] + w / 2, -center[1] + h / 2);
+  }
+
+  for (let marker of markerList) {
+    const location = precisePx([marker.x, marker.y], z);
+    console.log('drawing', location, marker, z);
+
+    ctx.drawImage(marker.image,
+                  location[0] - (marker.image.width / 2),
+                  location[1] - (marker.image.height / 2),
+                  marker.image.width,
+                  marker.image.height);
+  }
+
+  return canvas.toBuffer();
+};
+
 const calcZForBBox = (bbox, w, h, query) => {
   let z = 25;
 
@@ -198,7 +231,7 @@ const calcZForBBox = (bbox, w, h, query) => {
 
   z = Math.max(Math.log(Math.max(w, h) / 256) / Math.LN2, Math.min(25, z));
 
-  return z;
+  return z / 1.015;
 };
 
 const existingFonts = {};
@@ -518,7 +551,7 @@ module.exports = {
         return serveBounds(req, res, next);
       });
 
-      const autoPattern = 'auto';
+      const autoPattern = 'auto/:width(\\d+)x:height(\\d+)';
 
       app.get(util.format(staticPattern, autoPattern), (req, res, next) => {
         const item = repo[req.params.id];
@@ -564,6 +597,50 @@ module.exports = {
         return respondImage(item, z, x, y, bearing, pitch, w, h, scale, format,
           res, next, overlay);
       });
+
+      const markersPattern = `/:id/static/:overlay/%s:scale(${scalePattern})?.:format([\\w\\.]+)`;
+
+      console.log(util.format(markersPattern, autoPattern));
+      app.get(util.format(markersPattern, autoPattern), async (req, res, next) => {
+        const item = repo[req.params.id];
+        if (!item) {
+          return res.sendStatus(404);
+        }
+
+        let w = req.params.width | 0,
+          h = req.params.height | 0,
+          bearing = +(req.params.bearing || '0'),
+          pitch = +(req.params.pitch || '0'),
+          scale = getScale(req.params.scale),
+          format = req.params.format;
+
+        const markerList = markers.parse(req.params.overlay);
+
+        const bbox = [Infinity, Infinity, -Infinity, -Infinity];
+
+        for (const marker of markerList) {
+          bbox[0] = Math.min(bbox[0], marker.x);
+          bbox[1] = Math.min(bbox[1], marker.y);
+          bbox[2] = Math.max(bbox[2], marker.x);
+          bbox[3] = Math.max(bbox[3], marker.y);
+        }
+
+        const bbox_ = mercator.convert(bbox, '900913');
+        const center = mercator.inverse(
+          [(bbox_[0] + bbox_[2]) / 2, (bbox_[1] + bbox_[3]) / 2]
+        );
+
+        let z = calcZForBBox(bbox, w, h, req.query),
+          x = center[0],
+          y = center[1];
+
+        z = Math.min(z, 17);
+
+        const fetchedMarkersList = await Promise.all(markerList.map(m => markers.fetch(m)));
+        const overlay = renderMarkersOverlay(z, x, y, bearing, pitch, w, h, scale, fetchedMarkersList);
+
+        return respondImage(item, z, x, y, bearing, pitch, w, h, scale, format, res, next, overlay);
+      })
     }
 
     app.get('/:id.json', (req, res, next) => {
