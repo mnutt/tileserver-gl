@@ -322,9 +322,12 @@ module.exports = {
             image.resize(width * scale, height * scale);
           }
 
+          const overlays = [];
+
           if (opt_overlay) {
-            image.composite([{ input: opt_overlay }]);
+            overlays.push(opt_overlay);
           }
+
           if (item.watermark) {
             const canvas = createCanvas(scale * width, scale * height);
             const ctx = canvas.getContext('2d');
@@ -336,7 +339,13 @@ module.exports = {
             ctx.fillStyle = 'rgba(0,0,0,.4)';
             ctx.fillText(item.watermark, 5, height - 5);
 
-            image.composite([{ input: canvas.toBuffer() }]);
+            overlays.push(canvas.toBuffer());
+          }
+
+          if (overlays.length) {
+            image.composite(overlays.map(overlay => {
+              return { input: overlay };
+            }));
           }
 
           const formatQuality = (options.formatQuality || {})[format];
