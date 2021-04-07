@@ -118,18 +118,14 @@ const extractPathFromQuery = (query, transformer) => {
   return path;
 };
 
-const renderOverlay = (z, x, y, bearing, pitch, w, h, scale,
-  path, query) => {
-  if (!path || path.length < 2) {
-    return null;
-  }
-  const precisePx = (ll, zoom) => {
-    const px = mercator.px(ll, 20);
-    const scale = Math.pow(2, zoom - 20);
-    return [px[0] * scale, px[1] * scale];
-  };
+const precisePx = (ll, zoom) => {
+  const px = mercator.px(ll, 20);
+  const scale = Math.pow(2, zoom - 20);
+  return [px[0] * scale, px[1] * scale];
+};
 
-  const center = precisePx([x, y], z);
+const georeferenceMapCenter = (x, y, z, h) => {
+  let center = precisePx([x, y], z);
 
   const mapHeight = 512 * (1 << z);
   const maxEdge = center[1] + h / 2;
@@ -139,6 +135,17 @@ const renderOverlay = (z, x, y, bearing, pitch, w, h, scale,
   } else if (minEdge < 0) {
     center[1] -= minEdge;
   }
+
+  return center
+};
+
+const renderOverlay = (z, x, y, bearing, pitch, w, h, scale,
+  path, query) => {
+  if (!path || path.length < 2) {
+    return null;
+  }
+
+  const center = georeferenceMapCenter(x, y, z, h);
 
   const canvas = createCanvas(scale * w, scale * h);
   const ctx = canvas.getContext('2d');
