@@ -18,7 +18,6 @@ async function _templateForSize(size) {
 
   for (let i = 0, len = data.length; i < len; i++) {
     // Data is in ARGB format, check if red channel is 255
-    //console.log(data[i] >> 24 & 255);
     if ((data[i] >> 16) & 255 === 255) {
       const alpha = (data[i] >> 24) & 255;
       mask.push([i, alpha]);
@@ -54,16 +53,10 @@ exports.create = async function create(size, hex) {
   const g = color >> 8 & 255;
   const b = color & 255;
 
-  function debugColor(color) {
-    console.log(color >> 24 & 255, color >> 16 & 255, color >> 8 & 255, color & 255);
-  }
-
   // Fill in all of the color-masked areas with the new color + source alpha channel
   for (let [i, alpha] of template.mask) {
       argb[i] = (alpha << 24) | (b << 16) | (g << 8) | r;
   }
-
-  debugColor(argb[460]);
 
   const image = createCanvas(width, height);
   const ctx = image.getContext('2d');

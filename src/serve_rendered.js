@@ -550,7 +550,7 @@ module.exports = {
         return serveBounds(req, res, next);
       });
 
-      const autoPattern = 'auto/:width(\\d+)x:height(\\d+)';
+      const autoPattern = ':z(auto)';
 
       app.get(util.format(staticPattern, autoPattern), (req, res, next) => {
         const item = repo[req.params.id];
@@ -597,17 +597,22 @@ module.exports = {
           res, next, overlay);
       });
 
-      const markersPattern = `/:id/static/:overlay/%s:scale(${scalePattern})?.:format([\\w\\.]+)`;
+      const markersPattern = `/:id/static/:overlay/%s/:width(\\d+)x:height(\\d+):scale(${scalePattern})?.:format([\\w\\.]+)`;
 
-      console.log(util.format(markersPattern, autoPattern));
-      app.get(util.format(markersPattern, autoPattern), async (req, res, next) => {
+      app.get(util.format(markersPattern, autoPattern), markerRequest);
+      app.get(util.format(markersPattern, centerPattern), markerRequest);
+
+      async function markerRequest(req, res, next) {
         const item = repo[req.params.id];
         if (!item) {
           return res.sendStatus(404);
         }
 
         let w = req.params.width | 0,
-          h = req.params.height | 0,
+            h = req.params.height | 0,
+            z = req.params.z,
+            x = +req.params.x,
+            y = +req.params.y,
           bearing = +(req.params.bearing || '0'),
           pitch = +(req.params.pitch || '0'),
           scale = getScale(req.params.scale),
@@ -629,11 +634,15 @@ module.exports = {
           [(bbox_[0] + bbox_[2]) / 2, (bbox_[1] + bbox_[3]) / 2]
         );
 
-        let z = calcZForBBox(bbox, w, h, req.query),
-          x = center[0],
+        if (z === "auto") {
+          z = calcZForBBox(bbox, w, h, req.query);
+          x = center[0];
           y = center[1];
 
-        z = Math.min(z, 17);
+          z = Math.min(z, 17);
+        } else {
+          z = +z;
+        }
 
         const fetchedMarkersList = await Promise.all(markerList.map(m => {
           return markers.fetch(m).catch(e => console.error(e));
@@ -642,7 +651,7 @@ module.exports = {
         const overlay = renderMarkersOverlay(z, x, y, bearing, pitch, w, h, scale, fetchedMarkersList.filter(Boolean));
 
         return respondImage(item, z, x, y, bearing, pitch, w, h, scale, format, res, next, overlay);
-      })
+      }
     }
 
     app.get('/:id.json', (req, res, next) => {
