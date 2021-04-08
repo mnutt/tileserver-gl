@@ -201,7 +201,6 @@ const renderMarkersOverlay = (z, x, y, bearing, pitch, w, h, scale, markerList) 
 
   for (let marker of markerList) {
     const location = precisePx([marker.x, marker.y], z);
-    console.log('drawing', location, marker, z);
 
     ctx.drawImage(marker.image,
                   location[0] - (marker.image.width / 2),
