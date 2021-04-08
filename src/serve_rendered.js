@@ -635,8 +635,11 @@ module.exports = {
 
         z = Math.min(z, 17);
 
-        const fetchedMarkersList = await Promise.all(markerList.map(m => markers.fetch(m)));
-        const overlay = renderMarkersOverlay(z, x, y, bearing, pitch, w, h, scale, fetchedMarkersList);
+        const fetchedMarkersList = await Promise.all(markerList.map(m => {
+          return markers.fetch(m).catch(e => console.error(e));
+        }));
+
+        const overlay = renderMarkersOverlay(z, x, y, bearing, pitch, w, h, scale, fetchedMarkersList.filter(Boolean));
 
         return respondImage(item, z, x, y, bearing, pitch, w, h, scale, format, res, next, overlay);
       })

@@ -1,29 +1,12 @@
 const { loadImage } = require('canvas');
+const TIMEOUT = 3000;
 
-exports.get = async function(markerUrl) {
-  return loadImage(markerUrl);
-};
-
-function fetch(uri, callback) {
-  return request.get({
-    uri: uri,
-    encoding: null,
-    timeout: 10e3
-  }, function(err, rsp, body) {
-    if (err) {
-      return callback(err);
-    }
-
-    switch (rsp.statusCode) {
-    case 200:
-    case 403:
-    case 404:
-      return callback(null, rsp, body);
-
-    default:
-      err = new Error(util.format("Upstream error: %s returned %d", uri, rsp.statusCode));
-
-      return callback(err, rsp, body);
-    }
+exports.get = function(markerUrl) {
+  const timer = new Promise((_, reject) => {
+    setTimeout(() => reject(new Error("Timeout")), TIMEOUT);
   });
+
+  const image = loadImage(markerUrl);
+
+  return Promise.race([timer, image]);
 };
