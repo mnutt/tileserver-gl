@@ -110,7 +110,7 @@ function start(opts) {
     startupPromises.push(
       serve_rendered.init(options, serving.rendered)
         .then(sub => {
-          app.use('/styles/', sub);
+          app.use('/ts/', sub);
         })
     );
   }
