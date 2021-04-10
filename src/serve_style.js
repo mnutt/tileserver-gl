@@ -5,7 +5,7 @@ const fs = require('fs');
 
 const clone = require('clone');
 const express = require('express');
-import {validate} from '@mapbox/mapbox-gl-style-spec';
+const { validate } = require('@mapbox/mapbox-gl-style-spec');
 
 const utils = require('./utils');
 

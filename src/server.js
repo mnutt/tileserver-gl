@@ -10,7 +10,6 @@ const path = require('path');
 const chokidar = require('chokidar');
 const clone = require('clone');
 const cors = require('cors');
-const enableShutdown = require('http-shutdown');
 const express = require('express');
 const handlebars = require('handlebars');
 const mercator = new (require('@mapbox/sphericalmercator'))();
@@ -79,6 +78,8 @@ function start(opts) {
   paths.sprites = path.resolve(paths.root, paths.sprites || '');
   paths.mbtiles = path.resolve(paths.root, paths.mbtiles || '');
 
+  const prefix = opts.prefix || "/styles/";
+
   const startupPromises = [];
 
   const checkPath = type => {
@@ -105,12 +106,12 @@ function start(opts) {
   }
 
   app.use('/data/', serve_data.init(options, serving.data));
-  app.use('/styles/', serve_style.init(options, serving.styles));
+  app.use(prefix, serve_style.init(options, serving.styles));
   if (serve_rendered) {
     startupPromises.push(
       serve_rendered.init(options, serving.rendered)
         .then(sub => {
-          app.use('/ts/', sub);
+          app.use(prefix, sub);
         })
     );
   }
@@ -447,49 +448,10 @@ function start(opts) {
     }
   });
 
-  const server = app.listen(process.env.PORT || opts.port, process.env.BIND || opts.bind, function () {
-    let address = this.address().address;
-    if (address.indexOf('::') === 0) {
-      address = `[${address}]`; // literal IPv6 address
-    }
-    console.log(`Listening at http://${address}:${this.address().port}/`);
-  });
-
-  // add server.shutdown() to gracefully stop serving
-  enableShutdown(server);
-
   return {
     app: app,
-    server: server,
     startupPromise: startupPromise
   };
 }
 
-module.exports = opts => {
-  const running = start(opts);
-
-  running.startupPromise.catch(err => {
-    console.error(err.message);
-    process.exit(1);
-  });
-
-  process.on('SIGINT', () => {
-    process.exit();
-  });
-
-  process.on('SIGHUP', () => {
-    console.log('Stopping server and reloading config');
-
-    running.server.shutdown(() => {
-      for (const key in require.cache) {
-        delete require.cache[key];
-      }
-
-      const restarted = start(opts);
-      running.server = restarted.server;
-      running.app = restarted.app;
-    });
-  });
-
-  return running;
-};
+module.exports = start;

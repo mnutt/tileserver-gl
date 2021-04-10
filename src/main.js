@@ -2,11 +2,10 @@
 
 'use strict';
 
-require = require('esm')(module);
-
 const fs = require('fs');
 const path = require('path');
 const request = require('request');
+const enableShutdown = require('http-shutdown');
 
 const MBTiles = require('@mapbox/mbtiles');
 
@@ -64,6 +63,10 @@ const opts = require('commander')
     '-f|--log_format <format>',
     'define the log format:  https://github.com/expressjs/morgan#morganformat-options'
   )
+  .option(
+    '--prefix <prefix>',
+    'path prefix (defaults to /styles/)'
+  )
   .version(
     packageJson.version,
     '-v, --version'
@@ -72,12 +75,15 @@ const opts = require('commander')
 
 console.log(`Starting ${packageJson.name} v${packageJson.version}`);
 
-const startServer = (configPath, config) => {
+const startServer = async (configPath, config) => {
   let publicUrl = opts.public_url;
   if (publicUrl && publicUrl.lastIndexOf('/') !== publicUrl.length - 1) {
     publicUrl += '/';
   }
-  return require('./server')({
+
+  const initializeApp = require('./server');
+
+  const { app, startupPromise } = initializeApp({
     configPath: configPath,
     config: config,
     bind: opts.bind,
@@ -87,8 +93,44 @@ const startServer = (configPath, config) => {
     silent: opts.silent,
     logFile: opts.log_file,
     logFormat: opts.log_format,
-    publicUrl: publicUrl
+    publicUrl: publicUrl,
+    prefix: opts.prefix,
   });
+
+  try {
+    await startupPromise;
+  } catch(e) {
+    console.error(err.message);
+    process.exit(1);
+  }
+
+  const server = app.listen(process.env.PORT || opts.port, process.env.BIND || opts.bind, function () {
+    let address = this.address().address;
+    if (address.indexOf('::') === 0) {
+      address = `[${address}]`; // literal IPv6 address
+    }
+    console.log(`Listening at http://${address}:${this.address().port}/`);
+  });
+
+  process.on('SIGINT', () => {
+    process.exit();
+  });
+
+  process.on('SIGHUP', () => {
+    console.log('Stopping server and reloading config');
+
+    running.server.shutdown(() => {
+      for (const key in require.cache) {
+        delete require.cache[key];
+      }
+
+      const restarted = start(opts);
+      running.server = restarted.server;
+      running.app = restarted.app;
+    });
+  });
+
+  enableShutdown(server);
 };
 
 const startWithMBTiles = (mbtilesFile) => {
