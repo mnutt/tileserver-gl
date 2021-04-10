@@ -1,5 +1,5 @@
 const { loadImage, createCanvas, ImageData, Image } = require('canvas');
-const { memoize } = require('./memoize');
+const { memoize } = require('../memoize');
 const sharp = require('sharp');
 
 const oneDay = 24 * 60 * 60 * 1000;

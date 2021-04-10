@@ -1,4 +1,4 @@
-const { memoize } = require('./memoize');
+const { memoize } = require('../memoize');
 const generatedMarker = require('./generated');
 const urlMarker = require('./url');
 
