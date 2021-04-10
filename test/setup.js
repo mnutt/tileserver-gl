@@ -1,24 +1,17 @@
-process.env.NODE_ENV = 'test';
+exports.mochaGlobalSetup = async () => {
+  process.env.NODE_ENV = 'test';
 
-global.should = require('should');
-global.supertest = require('supertest');
+  global.should = require('should');
+  global.supertest = require('supertest');
 
-require = require('esm')(module);
-
-before(function() {
   console.log('global setup');
-  process.chdir('test_data');
-  var running = require('../src/server')({
+  process.chdir(__dirname + '/../test_data');
+  const { app, startupPromise } = require('../src/server')({
     configPath: 'config.json',
     port: 8888,
     publicUrl: '/test/'
   });
-  global.app = running.app;
-  global.server = running.server;
-  return running.startupPromise;
-});
 
-after(function() {
-  console.log('global teardown');
-  global.server.close(function() { console.log('Done'); process.exit(); });
-});
+  global.app = app;
+  await startupPromise;
+}

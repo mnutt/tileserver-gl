@@ -12,8 +12,13 @@
   "engines": {
     "node": ">=10 <11"
   },
+  "mocha": {
+    "exit": true,
+    "timeout": "10000",
+    "require": "./test/setup.js"
+  },
   "scripts": {
-    "test": "mocha test/**.js --timeout 10000",
+    "test": "mocha",
     "docker": "docker build -f Dockerfile . && docker run --rm -i -p 8080:80 $(docker build -q .)"
   },
   "dependencies": {
@@ -43,7 +48,8 @@
     "tileserver-gl-styles": "2.0.0"
   },
   "devDependencies": {
-    "mocha": "^7.1.0",
+    "mocha": "^8.3.2",
+    "mockery": "^2.1.0",
     "should": "^13.2.3",
     "supertest": "^4.0.2"
   },
