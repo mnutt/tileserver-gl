@@ -1,7 +1,7 @@
-const StyleManager = require('../style_manager');
+const StyleManager = require('../managers/style');
 const utils = require('../utils');
-
-const styleManager = StyleManager.instance;
+const { Router } = require('express');
+const fs = require('fs').promises;
 
 const fixUrl = (req, url, publicUrl, opt_nokey) => {
   if (!url || (typeof url !== 'string') || url.indexOf('local://') !== 0) {
@@ -23,7 +23,7 @@ module.exports = function(options) {
   function getStyleRoute(req, res, next) {
     const { id } = req.params;
 
-    const item = styleManager.get(id);
+    const item = StyleManager.instance.get(id);
     if (!item) {
       return res.sendStatus(404);
     }
@@ -53,7 +53,7 @@ module.exports = function(options) {
   async function getStyleSpriteRoute(req, res, next) {
     const { scale, format, id } = req.params;
 
-    const item = styleManager.get(id);
+    const item = StyleManager.instance.get(id);
     if (!item || !item.spritePath) {
       return res.sendStatus(404);
     }
@@ -76,5 +76,9 @@ module.exports = function(options) {
     }
   }
 
-  return { getStyle: getStyleRoute, getStyleSprite: getStyleSpriteRoute };
+  const routes = new Router();
+  routes.get('/:id/style.json', getStyleRoute);
+  routes.get('/:id/sprite:scale(@[23]x)?.:format([\\w]+)', getStyleSpriteRoute);
+
+  return routes;
 }

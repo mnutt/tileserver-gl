@@ -1,11 +1,28 @@
 const { URL }= require('url');
-const FontManager = require('./font_manager');
-const StyleManager = require('./style_manager');
+const FontManager = require('./font');
+const StyleManager = require('./style');
+const DataManager = require('./data');
+const advancedPool = require('advanced-pool');
+const mbgl = require('@mapbox/mapbox-gl-native');
+const utils = require('../utils');
+const fs = require('fs').promises;
+const path = require('path');
+const zlib = require('zlib');
+const util = require('util');
 
-async function requestSprites(url, paths) {
-  const dir = paths.sprites;
-  const file = unescape(url).substring(protocol.length + 3);
-  const data = await fs.readFile(path.join(dir, file));
+const unzip = util.promisify(zlib.unzip);
+
+function fromEntries(arr) {
+  return arr.reduce((obj, [key, val]) => {
+    obj[key] = val
+    return obj
+  }, {});
+}
+
+async function requestSprites(url) {
+  const protocol = url.split(':')[0];
+  const file = unescape(url).slice(protocol.length + 3);
+  const data = await fs.readFile(file);
   return { data };
 }
 
@@ -18,9 +35,9 @@ async function requestFonts(url) {
   return { data: concated };
 }
 
-async function requestMbtiles(url) {
+async function requestMbtiles(url, decoratorFunc) {
   const parts = url.split('/');
-  const sourceId = parts[2];
+  let sourceId = parts[2];
   const { source } = DataManager.instance.get(sourceId);
 
   const z = parts[3] | 0,
@@ -40,12 +57,11 @@ async function requestMbtiles(url) {
       try {
         response.data = await unzip(data);
       } catch (err) {
-        console.log("Skipping incorrect header for tile mbtiles://%s/%s/%s/%s.pbf", id, z, x, y);
+        console.log("Skipping incorrect header for tile mbtiles://%s/%s/%s/%s.pbf", sourceId, z, x, y, err);
       }
 
-      if (options.dataDecoratorFunc) {
-        response.data = options.dataDecoratorFunc(
-          sourceId, 'data', response.data, z, x, y);
+      if (decoratorFunc) {
+        response.data = decoratorFunc(sourceId, 'data', response.data, z, x, y);
       }
     } else {
       response.data = data;
@@ -101,8 +117,26 @@ async function requestUrl(url) {
 }
 
 class RenderManager {
-  constructor() {
+  constructor(options) {
+    this.options = options;
     this.repo = {};
+    this.maxScaleFactor = Math.min(Math.floor(options.maxScaleFactor || 3), 9);
+  }
+
+  static async init(options, styles) {
+    const manager = new RenderManager(options);
+
+    await Promise.all(Object.keys(styles).map(id => {
+      const item = styles[id];
+      if (!item.style || item.style.length == 0) {
+        console.log(`Missing "style" property for ${id}`);
+        return;
+      }
+      return manager.add(item, id);
+    }).filter(Boolean))
+
+    RenderManager.instance = manager;
+    return manager;
   }
 
   get(id) {
@@ -117,20 +151,77 @@ class RenderManager {
     delete this.repo[id];
   }
 
-  async add(item, id, dataResolver) {
-    const styleJSON = StyleManager.instance.get(item.style).styleJSON;
+  async add(item, id) {
+    const mapRenderer = await this.createMapRenderer(item, id);
+    this.repo[id] = mapRenderer;
+    return mapRenderer;
+  }
+
+  static scalePattern(maxScaleFactor=3) {
+    let scalePattern = '';
+    for (let i = 2; i <= maxScaleFactor; i++) {
+      scalePattern += i.toFixed();
+    }
+    return `@[${scalePattern}]x`;
+  }
+
+  rewriteStyleSources({ styleJSON, spritePath }) {
+    const sources = Object.entries(styleJSON.sources).map(([name, source]) => {
+      const { url } = source;
+
+      if (!url.startsWith('mbtiles:')) {
+        return false;
+      }
+
+      let sourceId = url.slice('mbtiles://'.length);
+
+      if (sourceId.startsWith('{') && sourceId.endsWith('}')) {
+        sourceId = sourceId.slice(1, -1);
+      }
+
+      const data = DataManager.instance.get(sourceId);
+      const type = data.tileJSON.format === 'pbf' ? 'vector' : data.tileJSON.type;
+
+      const tiles = [
+        // meta url which will be detected when requested
+        `mbtiles://${data.tileJSON.id}/{z}/{x}/{y}.pbf`
+      ];
+
+      return [name, Object.assign({}, data.tileJSON, { tiles, type })];
+    }).filter(Boolean);
+
+    let { sprite } = styleJSON;
+    if (spritePath) {
+      sprite = `sprites://${spritePath}`;
+    }
+
+    return Object.assign({}, styleJSON, {
+      glyphs: "fonts://{fontstack}/{range}.pbf",
+      sprite,
+      sources: fromEntries(sources)
+    });
+  }
+
+  async createMapRenderer(item, id) {
+    const style = StyleManager.instance.get(id);
+    const styleJSON = this.rewriteStyleSources(style);
+    const { dataDecoratorFunc } = this.options;
+
+    const renderers = [];
 
     function requestMap(url) {
       const protocol = url.split(':')[0];
 
       if (protocol === 'sprites') {
-        return requestSprites(url, paths);
+        return requestSprites(url);
       } else if (protocol === 'fonts') {
         return requestFonts(url);
       } else if (protocol === 'mbtiles') {
-        return requestMbtiles(url, map, styleJSON);
+        return requestMbtiles(url, dataDecoratorFunc);
       } else if (protocol === 'http' || protocol === 'https') {
         return requestUrl(url);
+      } else {
+        return Promise.reject(new Error(`Unkown protocol: ${protocol}`));
       }
     }
 
@@ -140,9 +231,13 @@ class RenderManager {
           mode: "tile",
           ratio: ratio,
           request: (req, callback) => {
+            try {
             requestMap(req.url)
               .then((data) => callback(null, data))
               .catch((err) => callback(err, null));
+            } catch(e) {
+              console.error(e);
+            }
           }
         });
 
@@ -162,12 +257,12 @@ class RenderManager {
 
     const minPoolSizes = this.options.minRendererPoolSizes || [8, 4, 2];
     const maxPoolSizes = this.options.maxRendererPoolSizes || [16, 8, 4];
-    for (let s = 1; s <= maxScaleFactor; s++) {
+    for (let s = 1; s <= this.maxScaleFactor; s++) {
       const i = Math.min(minPoolSizes.length - 1, s - 1);
       const j = Math.min(maxPoolSizes.length - 1, s - 1);
       const minPoolSize = minPoolSizes[i];
       const maxPoolSize = Math.max(minPoolSize, maxPoolSizes[j]);
-      map.renderers[s] = createPool(s, minPoolSize, maxPoolSize);
+      renderers[s] = createPool(s, minPoolSize, maxPoolSize);
     }
 
     const tileJSON = {
@@ -186,28 +281,6 @@ class RenderManager {
     tileJSON.tiles = item.domains || this.options.domains;
     utils.fixTileJSONCenter(tileJSON);
 
-    const sources = Object.values(tileJSON.sources).map(originalSource => {
-      const source = Object.assign({}, originalSource);
-
-      const url = source.url;
-
-      if (url && url.lastIndexOf('mbtiles:', 0) === 0) {
-        // found mbtiles source, replace with info from local file
-        delete source.url;
-      }
-    });
-
-    const renderers = [];
-    const minPoolSizes = this.options.minRendererPoolSizes || [8, 4, 2];
-    const maxPoolSizes = this.options.maxRendererPoolSizes || [16, 8, 4];
-    for (let s = 1; s <= maxScaleFactor; s++) {
-      const i = Math.min(minPoolSizes.length - 1, s - 1);
-      const j = Math.min(maxPoolSizes.length - 1, s - 1);
-      const minPoolSize = minPoolSizes[i];
-      const maxPoolSize = Math.max(minPoolSize, maxPoolSizes[j]);
-      renderers[s] = createPool(s, minPoolSize, maxPoolSize);
-    }
-
     const mapRenderer = {
       tileJSON,
       renderers,
@@ -216,6 +289,8 @@ class RenderManager {
       watermark: item.watermark || this.options.watermark
     };
 
-    this.repo[id] = mapRenderer;
+    return mapRenderer;
   }
 }
+
+module.exports = RenderManager;

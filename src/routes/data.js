@@ -1,14 +1,13 @@
 const zlib = require('zlib');
 const util = require('util');
-const DataManager = require('../data_manager');
+const DataManager = require('../managers/data');
+const { Router } = require('express');
 
 const unzip = util.promisify(zlib.unzip);
 
-const dataManager = DataManager.instance;
-
 module.exports = function(options) {
   async function dataCoordinatesRoute(req, res, next) {
-    const item = dataManager.get(req.params.id);
+    const item = DataManager.instance.get(req.params.id);
 
     if (!item) {
       return res.sendStatus(404);
@@ -168,7 +167,7 @@ module.exports = function(options) {
 
   async function dataRoute(req, res, next) {
     const { id } = req.params;
-    const item = dataManager.get(id);
+    const item = DataManager.instance.get(id);
 
     if (!item) {
       return res.sendStatus(404);
@@ -180,5 +179,9 @@ module.exports = function(options) {
     return res.send(info);
   }
 
-  return { data: dataRoute, dataCoordinates: dataCoordinatesRoute };
+  const routes = new Router();
+  routes.get('/:id.json', dataRoute);
+  routes.get('/:id/:z(\\d+)/:x(\\d+)/:y(\\d+).:format([\\w.]+)', dataCoordinatesRoute);
+
+  return routes;
 }

@@ -1,3 +1,17 @@
+const fs = require('fs');
+const makeApp = require('../src/app');
+const DataManager = require('../src/managers/data');
+
+process.chdir(__dirname + '/../test_data');
+const config = JSON.parse(fs.readFileSync('./config.json'));
+config.options.publicUrl = '/test/';
+
+let app;
+before(async () => {
+  await DataManager.init(config.options, config.data);
+  app = makeApp(config.options);
+})
+
 var testTile = function(prefix, z, x, y, status) {
   var path = '/data/' + prefix + '/' + z + '/' + x + '/' + y + '.pbf';
   it(path + ' returns ' + status, function(done) {

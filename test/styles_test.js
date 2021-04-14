@@ -1,3 +1,20 @@
+const fs = require('fs');
+const makeApp = require('../src/app');
+const StyleManager = require('../src/managers/style');
+const FontManager = require('../src/managers/font');
+
+process.chdir(__dirname + '/../test_data');
+const config = JSON.parse(fs.readFileSync('./config.json'));
+config.options.publicUrl = '/test/';
+
+let app;
+before(async () => {
+  const styleManager = await StyleManager.init(config.options, config.styles);
+  await FontManager.init(config.options, styleManager.fontsList);
+
+  app = makeApp(config.options);
+})
+
 var testIs = function(url, type, status) {
   it(url + ' return ' + (status || 200) + ' and is ' + type.toString(),
       function(done) {

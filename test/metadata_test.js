@@ -1,3 +1,29 @@
+const fs = require('fs');
+const makeApp = require('../src/app');
+const StyleManager = require('../src/managers/style');
+const DataManager = require('../src/managers/data');
+const FontManager = require('../src/managers/font');
+const RenderManager = require('../src/managers/render');
+
+process.chdir(__dirname + '/../test_data');
+const config = JSON.parse(fs.readFileSync('./config.json'));
+config.options.publicUrl = '/test/';
+
+let app;
+before(async () => {
+  const styleManager = await StyleManager.init(config.options, config.styles);
+  const dataManager = await DataManager.init(config.options, config.data);
+  const fontManager = await FontManager.init(config.options, styleManager.fontsList);
+
+  const extraSources = dataManager.validateSources(styleManager.sourcesList).filter(s => s.newData);
+  for (let { id, item } of extraSources) {
+    dataManager.add(id, item);
+  }
+
+  await RenderManager.init(config.options, config.styles);
+  app = makeApp(config.options);
+})
+
 var testTileJSONArray = function(url) {
   describe(url + ' is array of TileJSONs', function() {
     it('is json', function(done) {
