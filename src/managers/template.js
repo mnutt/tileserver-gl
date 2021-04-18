@@ -1,8 +1,8 @@
-const path = require('path');
-const fs = require('fs').promises;
-const handlebars = require('handlebars');
+const path = require("path");
+const fs = require("fs").promises;
+const handlebars = require("handlebars");
 
-const templatesPath = path.join(__dirname, '../../public/templates');
+const templatesPath = path.join(__dirname, "../../public/templates");
 
 class TemplateManager {
   constructor() {
@@ -27,7 +27,7 @@ class TemplateManager {
     const templateData = await fs.readFile(templatePath);
     const compiledTemplate = handlebars.compile(templateData.toString());
 
-    const templateName = templateFile.replace(/\.tmpl$/, '');
+    const templateName = templateFile.replace(/\.tmpl$/, "");
     this.compiled[templateName] = compiledTemplate;
   }
 

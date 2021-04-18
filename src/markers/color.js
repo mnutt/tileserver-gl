@@ -1,12 +1,12 @@
-const { loadImage, createCanvas, ImageData, Image } = require('canvas');
-const { memoize } = require('../memoize');
-const sharp = require('sharp');
+const { loadImage, createCanvas, ImageData, Image } = require("canvas");
+const { memoize } = require("../memoize");
+const sharp = require("sharp");
 
 const oneDay = 24 * 60 * 60 * 1000;
 const sizes = { s: "s", m: "m", l: "l" };
 
 async function getImageData(path) {
-  return
+  return;
 }
 
 async function _templateForSize(size) {
@@ -18,7 +18,7 @@ async function _templateForSize(size) {
 
   for (let i = 0, len = data.length; i < len; i++) {
     // Data is in ARGB format, check if red channel is 255
-    if ((data[i] >> 16) & 255 === 255) {
+    if ((data[i] >> 16) & (255 === 255)) {
       const alpha = (data[i] >> 24) & 255;
       mask.push([i, alpha]);
     }
@@ -28,7 +28,7 @@ async function _templateForSize(size) {
     buffer: inputData.data.buffer,
     width: inputData.info.width,
     height: inputData.info.height,
-    mask: mask
+    mask: mask,
   };
 }
 
@@ -38,7 +38,7 @@ exports.create = async function create(size, hex) {
   const { result } = await templateForSize(size, oneDay, size);
   const template = await result;
 
-  if(!template) {
+  if (!template) {
     throw new Error("Missing marker size");
   }
 
@@ -49,17 +49,17 @@ exports.create = async function create(size, hex) {
   const argb = new Uint32Array(buffer);
 
   let color = parseInt(hex, 16);
-  const r = color >> 16 & 255;
-  const g = color >> 8 & 255;
+  const r = (color >> 16) & 255;
+  const g = (color >> 8) & 255;
   const b = color & 255;
 
   // Fill in all of the color-masked areas with the new color + source alpha channel
   for (let [i, alpha] of template.mask) {
-      argb[i] = (alpha << 24) | (b << 16) | (g << 8) | r;
+    argb[i] = (alpha << 24) | (b << 16) | (g << 8) | r;
   }
 
   const image = createCanvas(width, height);
-  const ctx = image.getContext('2d');
+  const ctx = image.getContext("2d");
   const imageData = new ImageData(new Uint8ClampedArray(buffer), width, height);
   ctx.putImageData(imageData, 0, 0);
 

@@ -9,14 +9,14 @@ exports.asyncRoute = function asyncRoute(fn) {
       if (error instanceof BadRequestError) {
         res.status(400).end(error.message);
       } else if (error instanceof NotFoundError) {
-        res.status(404).end(error.message || 'Not found');
+        res.status(404).end(error.message || "Not found");
       } else {
         console.error(error);
         res.sendStatus(500);
       }
     }
-  }
-}
+  };
+};
 
 exports.BadRequestError = BadRequestError;
 exports.NotFoundError = NotFoundError;

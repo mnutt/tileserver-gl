@@ -1,37 +1,37 @@
-const fs = require('fs');
-const makeApp = require('../src/app');
-const DataManager = require('../src/managers/data');
+const fs = require("fs");
+const makeApp = require("../src/app");
+const DataManager = require("../src/managers/data");
 
-process.chdir(__dirname + '/../test_data');
-const config = JSON.parse(fs.readFileSync('./config.json'));
-config.options.publicUrl = '/test/';
+process.chdir(__dirname + "/../test_data");
+const config = JSON.parse(fs.readFileSync("./config.json"));
+config.options.publicUrl = "/test/";
 
 let app;
 before(async () => {
   await DataManager.init(config.options, config.data);
   app = makeApp(config.options);
-})
+});
 
-var testTile = function(prefix, z, x, y, status) {
-  var path = '/data/' + prefix + '/' + z + '/' + x + '/' + y + '.pbf';
-  it(path + ' returns ' + status, function(done) {
+var testTile = function (prefix, z, x, y, status) {
+  var path = "/data/" + prefix + "/" + z + "/" + x + "/" + y + ".pbf";
+  it(path + " returns " + status, function (done) {
     var test = supertest(app).get(path);
     if (status) test.expect(status);
-    if (status == 200) test.expect('Content-Type', /application\/x-protobuf/);
+    if (status == 200) test.expect("Content-Type", /application\/x-protobuf/);
     test.end(done);
   });
 };
 
-var prefix = 'openmaptiles';
+var prefix = "openmaptiles";
 
-describe('Vector tiles', function() {
-  describe('existing tiles', function() {
+describe("Vector tiles", function () {
+  describe("existing tiles", function () {
     testTile(prefix, 0, 0, 0, 200);
     testTile(prefix, 14, 8581, 5738, 200);
   });
 
-  describe('non-existent requests return 4xx', function() {
-    testTile('non_existent', 0, 0, 0, 404);
+  describe("non-existent requests return 4xx", function () {
+    testTile("non_existent", 0, 0, 0, 404);
     testTile(prefix, -1, 0, 0, 404); // err zoom
     testTile(prefix, 20, 0, 0, 404); // zoom out of bounds
     testTile(prefix, 0, 1, 0, 404);

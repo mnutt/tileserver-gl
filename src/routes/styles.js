@@ -1,27 +1,27 @@
-const StyleManager = require('../managers/style');
-const DataManager = require('../managers/data');
-const utils = require('../utils');
-const { Router } = require('express');
-const fs = require('fs').promises;
-const { asyncRoute } = require('./support');
+const StyleManager = require("../managers/style");
+const DataManager = require("../managers/data");
+const utils = require("../utils");
+const { Router } = require("express");
+const fs = require("fs").promises;
+const { asyncRoute } = require("./support");
 
 const fixUrl = (req, url, publicUrl, opt_nokey) => {
-  if (!url || (typeof url !== 'string') || url.indexOf('local://') !== 0) {
+  if (!url || typeof url !== "string" || url.indexOf("local://") !== 0) {
     return url;
   }
   const queryParams = [];
   if (!opt_nokey && req.query.key) {
     queryParams.unshift(`key=${encodeURIComponent(req.query.key)}`);
   }
-  let query = '';
+  let query = "";
   if (queryParams.length) {
-    query = `?${queryParams.join('&')}`;
+    query = `?${queryParams.join("&")}`;
   }
 
-  return url.replace('local://', utils.getPublicUrl(publicUrl, req)) + query;
+  return url.replace("local://", utils.getPublicUrl(publicUrl, req)) + query;
 };
 
-module.exports = function(options) {
+module.exports = function (options) {
   function getStyleRoute(req, res, next) {
     const { id } = req.params;
 
@@ -37,12 +37,12 @@ module.exports = function(options) {
       return [id, Object.assign({}, source, { url })];
     });
 
-      styleJSON.sources = Object.assign({}, utils.fromEntries(sources));
+    styleJSON.sources = Object.assign({}, utils.fromEntries(sources));
 
     for (const name of Object.keys(styleJSON.sources)) {
       const source = styleJSON.sources[name];
       const url = fixUrl(req, source.url, options.publicUrl);
-      styleJSON.sources[name] = Object.assign({}, source, { url })
+      styleJSON.sources[name] = Object.assign({}, source, { url });
     }
 
     // mapbox-gl-js viewer cannot handle sprite urls with query
@@ -65,27 +65,27 @@ module.exports = function(options) {
       return res.sendStatus(404);
     }
 
-    const filename = `${item.spritePath + (scale || '')}.${format}`;
+    const filename = `${item.spritePath + (scale || "")}.${format}`;
 
     try {
       const data = await fs.readFile(filename);
 
-      if (format === 'json') {
-        res.header('Content-type', 'application/json');
-      } else if (format === 'png') {
-        res.header('Content-type', 'image/png');
+      if (format === "json") {
+        res.header("Content-type", "application/json");
+      } else if (format === "png") {
+        res.header("Content-type", "image/png");
       }
 
       return res.send(data);
     } catch (err) {
-      console.log('Sprite load error:', filename);
+      console.log("Sprite load error:", filename);
       return res.sendStatus(404);
     }
   }
 
   const routes = new Router();
-  routes.get('/:id/style.json', asyncRoute(getStyleRoute));
-  routes.get('/:id/sprite:scale(@[23]x)?.:format([\\w]+)', asyncRoute(getStyleSpriteRoute));
+  routes.get("/:id/style.json", asyncRoute(getStyleRoute));
+  routes.get("/:id/sprite:scale(@[23]x)?.:format([\\w]+)", asyncRoute(getStyleSpriteRoute));
 
   return routes;
-}
+};

@@ -1,7 +1,7 @@
-const fs = require('fs').promises;
-const path = require('path');
-const MBTiles = require('@mapbox/mbtiles');
-const utils = require('../utils');
+const fs = require("fs").promises;
+const path = require("path");
+const MBTiles = require("@mapbox/mbtiles");
+const utils = require("../utils");
 
 class DataSource {
   constructor(source) {
@@ -10,14 +10,16 @@ class DataSource {
 
   getInfo() {
     return new Promise((resolve, reject) => {
-      this.source.getInfo((err, info) => err ? reject(err) : resolve(info));
+      this.source.getInfo((err, info) => (err ? reject(err) : resolve(info)));
     });
   }
 
   getTile(z, x, y) {
     return new Promise((resolve, reject) => {
-      this.source.getTile(z, x, y, (err, data, headers) => err ? reject(err) : resolve({ data, headers }));
-    })
+      this.source.getTile(z, x, y, (err, data, headers) =>
+        err ? reject(err) : resolve({ data, headers })
+      );
+    });
   }
 }
 
@@ -26,7 +28,7 @@ class DataManager {
     this.options = options;
 
     const { mbtiles, root } = options.paths;
-    this.mbtilesDirectory = path.resolve(root || '', mbtiles || '');
+    this.mbtilesDirectory = path.resolve(root || "", mbtiles || "");
 
     this.data = {};
     this.sourceMapping = {};
@@ -40,26 +42,29 @@ class DataManager {
   static async init(options, data) {
     const manager = new DataManager(options);
 
-    await Promise.all(Object.keys(data).map(id => {
-      const item = data[id];
-      return manager.add(item, id);
-    }).filter(Boolean))
+    await Promise.all(
+      Object.keys(data)
+        .map((id) => {
+          const item = data[id];
+          return manager.add(item, id);
+        })
+        .filter(Boolean)
+    );
 
     DataManager.instance = manager;
     return manager;
   }
 
   validateSources(sourcesList, allowNewSource) {
-    return sourcesList.map(({name, source, mapping}) => {
-
+    return sourcesList.map(({ name, source, mapping }) => {
       const { url } = source;
 
-      if (!(url && url.startsWith('mbtiles:'))) {
+      if (!(url && url.startsWith("mbtiles:"))) {
         throw new Error(`Invalid protocol: ${url}`);
       }
 
-      let mbtilesFile = url.slice('mbtiles://'.length);
-      const fromData = mbtilesFile.startsWith('{') && mbtilesFile.endsWith('}');
+      let mbtilesFile = url.slice("mbtiles://".length);
+      const fromData = mbtilesFile.startsWith("{") && mbtilesFile.endsWith("}");
       if (fromData) {
         mbtilesFile = mbtilesFile.slice(1, -1);
         const mapsTo = (mapping || {})[mbtilesFile];
@@ -93,14 +98,17 @@ class DataManager {
       }
     }
 
-    if (dataItemId) { // mbtiles exist in the data config
+    if (dataItemId) {
+      // mbtiles exist in the data config
       return { identifier: dataItemId, newData: false };
     } else {
       if (fromData) {
-        throw new Error(`ERROR: style "${item.style}" using unknown mbtiles "${mbtiles}"! Skipping...`);
+        throw new Error(
+          `ERROR: style "${item.style}" using unknown mbtiles "${mbtiles}"! Skipping...`
+        );
       } else {
-        let identifier = mbtiles.substr(0, mbtiles.lastIndexOf('.')) || mbtiles;
-        while (this.get(identifier)) identifier += '_';
+        let identifier = mbtiles.substr(0, mbtiles.lastIndexOf(".")) || mbtiles;
+        while (this.get(identifier)) identifier += "_";
 
         return { identifier, newData: true };
       }
@@ -134,20 +142,20 @@ class DataManager {
     let tileJSON = {
       tiles: item.domains || this.options.domains,
       name: id,
-      format: 'pbf'
-    }
+      format: "pbf",
+    };
 
-    Object.assign(tileJSON, info, { tilejson: '2.0.0' });
+    Object.assign(tileJSON, info, { tilejson: "2.0.0" });
 
-    delete tileJSON['filesize'];
-    delete tileJSON['mtime'];
-    delete tileJSON['scheme'];
+    delete tileJSON["filesize"];
+    delete tileJSON["mtime"];
+    delete tileJSON["scheme"];
 
     Object.assign(tileJSON, item.tilejson || {});
     utils.fixTileJSONCenter(tileJSON);
 
     if (this.options.dataDecoratorFunc) {
-      tileJSON = this.options.dataDecoratorFunc(id, 'tilejson', tileJSON);
+      tileJSON = this.options.dataDecoratorFunc(id, "tilejson", tileJSON);
     }
 
     return { tileJSON, source };
@@ -156,7 +164,7 @@ class DataManager {
   async loadMbTiles(mbtilesFile) {
     return new Promise((resolve, reject) => {
       let source;
-      source = new MBTiles(mbtilesFile, err => {
+      source = new MBTiles(mbtilesFile, (err) => {
         err ? reject(err) : resolve(source);
       });
     });

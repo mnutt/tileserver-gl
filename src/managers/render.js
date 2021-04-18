@@ -1,60 +1,67 @@
-const { URL }= require('url');
-const FontManager = require('./font');
-const StyleManager = require('./style');
-const DataManager = require('./data');
-const advancedPool = require('advanced-pool');
-const mbgl = require('@mapbox/mapbox-gl-native');
-const utils = require('../utils');
-const fs = require('fs').promises;
-const path = require('path');
-const zlib = require('zlib');
-const util = require('util');
+const { URL } = require("url");
+const FontManager = require("./font");
+const StyleManager = require("./style");
+const DataManager = require("./data");
+const advancedPool = require("advanced-pool");
+const mbgl = require("@mapbox/mapbox-gl-native");
+const utils = require("../utils");
+const fs = require("fs").promises;
+const path = require("path");
+const zlib = require("zlib");
+const util = require("util");
 
 const unzip = util.promisify(zlib.unzip);
 
 async function requestSprites(url) {
-  const protocol = url.split(':')[0];
+  const protocol = url.split(":")[0];
   const file = unescape(url).slice(protocol.length + 3);
   const data = await fs.readFile(file);
   return { data };
 }
 
 async function requestFonts(url) {
-  const parts = url.split('/');
+  const parts = url.split("/");
   const fontstack = unescape(parts[2]);
-  const range = parts[3].split('.')[0];
+  const range = parts[3].split(".")[0];
 
   const concated = await FontManager.instance.getFontsPbf(fontstack, range);
   return { data: concated };
 }
 
 async function requestMbtiles(url, decoratorFunc) {
-  const parts = url.split('/');
+  const parts = url.split("/");
   let sourceId = parts[2];
   const { source } = DataManager.instance.get(sourceId);
 
   const z = parts[3] | 0,
-        x = parts[4] | 0,
-        y = parts[5].split('.')[0] | 0,
-        format = parts[5].split('.')[1];
+    x = parts[4] | 0,
+    y = parts[5].split(".")[0] | 0,
+    format = parts[5].split(".")[1];
 
   try {
     const { data, headers } = await source.getTile(z, x, y);
 
     const response = {};
-    if (headers['Last-Modified']) {
-      response.modified = new Date(headers['Last-Modified']);
+    if (headers["Last-Modified"]) {
+      response.modified = new Date(headers["Last-Modified"]);
     }
 
-    if (format === 'pbf') {
+    if (format === "pbf") {
       try {
         response.data = await unzip(data);
       } catch (err) {
-        console.log("Skipping incorrect header for tile mbtiles://%s/%s/%s/%s.pbf", sourceId, z, x, y, err);
+        console.log(
+          "Skipping incorrect header for tile mbtiles://%s/%s/%s/%s.pbf",
+          sourceId,
+          z,
+          x,
+          y,
+          err
+        );
       }
 
       if (decoratorFunc) {
-        response.data = decoratorFunc(sourceId, 'data', response.data, z, x, y);
+        response.data = decoratorFunc(sourceId, "data", response.data, z, x, y);
       }
     } else {
       response.data = data;
@@ -63,7 +70,7 @@ async function requestMbtiles(url, decoratorFunc) {
     return response;
   } catch (err) {
     const sourceInfo = StyleManager.instance.get(sourceId).styleJSON;
-    console.log('MBTiles error, serving empty', err);
+    console.log("MBTiles error, serving empty", err);
     return createEmptyResponse(sourceInfo.format, sourceInfo.color);
   }
 }
@@ -71,22 +78,25 @@ async function requestMbtiles(url, decoratorFunc) {
 async function requestUrl(url) {
   try {
     const { res, body } = await new Promise((resolve, reject) => {
-      request({
-        url,
-        encoding: null,
-        gzip: true
-      }, (err, res, body) => {
-        if (err || res.statusCode < 200 || res.statusCode >= 300) {
-          reject(err || `http ${res.statusCode}`);
-        } else {
-          resolve({ res, body });
+      request(
+        {
+          url,
+          encoding: null,
+          gzip: true,
+        },
+        (err, res, body) => {
+          if (err || res.statusCode < 200 || res.statusCode >= 300) {
+            reject(err || `http ${res.statusCode}`);
+          } else {
+            resolve({ res, body });
+          }
         }
-      });
+      );
     });
 
     const parts = new URL(url);
     const extension = path.extname(parts.pathname).toLowerCase();
-    const format = extensionToFormat[extension] || '';
+    const format = extensionToFormat[extension] || "";
 
     const response = {};
 
@@ -104,8 +114,8 @@ async function requestUrl(url) {
 
     response.data = body;
     return response;
-  } catch(err) {
-    return createEmptyResponse(format, '', callback);
+  } catch (err) {
+    return createEmptyResponse(format, "", callback);
   }
 }
 
@@ -119,14 +129,18 @@ class RenderManager {
   static async init(options, styles) {
     const manager = new RenderManager(options);
 
-    await Promise.all(Object.keys(styles).map(id => {
-      const item = styles[id];
-      if (!item.style || item.style.length == 0) {
-        console.log(`Missing "style" property for ${id}`);
-        return;
-      }
-      return manager.add(item, id);
-    }).filter(Boolean))
+    await Promise.all(
+      Object.keys(styles)
+        .map((id) => {
+          const item = styles[id];
+          if (!item.style || item.style.length == 0) {
+            console.log(`Missing "style" property for ${id}`);
+            return;
+          }
+          return manager.add(item, id);
+        })
+        .filter(Boolean)
+    );
 
     RenderManager.instance = manager;
     return manager;
@@ -143,7 +157,7 @@ class RenderManager {
   remove(id) {
     let mapRenderer = this.get(id);
     if (mapRenderer) {
-      mapRenderer.renderers.forEach(pool => pool.close());
+      mapRenderer.renderers.forEach((pool) => pool.close());
     }
     delete this.repo[id];
   }
@@ -154,8 +168,8 @@ class RenderManager {
     return mapRenderer;
   }
 
-  static scalePattern(maxScaleFactor=3) {
-    let scalePattern = '';
+  static scalePattern(maxScaleFactor = 3) {
+    let scalePattern = "";
     for (let i = 2; i <= maxScaleFactor; i++) {
       scalePattern += i.toFixed();
     }
@@ -163,29 +177,31 @@ class RenderManager {
   }
 
   rewriteStyleSources({ styleJSON, spritePath }) {
-    const sources = Object.entries(styleJSON.sources).map(([name, source]) => {
-      const { url } = source;
+    const sources = Object.entries(styleJSON.sources)
+      .map(([name, source]) => {
+        const { url } = source;
 
-      if (!url.startsWith('mbtiles:')) {
-        return false;
-      }
+        if (!url.startsWith("mbtiles:")) {
+          return false;
+        }
 
-      let sourceId = url.slice('mbtiles://'.length);
+        let sourceId = url.slice("mbtiles://".length);
 
-      if (sourceId.startsWith('{') && sourceId.endsWith('}')) {
-        sourceId = sourceId.slice(1, -1);
-      }
+        if (sourceId.startsWith("{") && sourceId.endsWith("}")) {
+          sourceId = sourceId.slice(1, -1);
+        }
 
-      const data = DataManager.instance.get(sourceId);
-      const type = data.tileJSON.format === 'pbf' ? 'vector' : data.tileJSON.type;
+        const data = DataManager.instance.get(sourceId);
+        const type = data.tileJSON.format === "pbf" ? "vector" : data.tileJSON.type;
 
-      const tiles = [
-        // meta url which will be detected when requested
-        `mbtiles://${data.tileJSON.id}/{z}/{x}/{y}.pbf`
-      ];
+        const tiles = [
+          // meta url which will be detected when requested
+          `mbtiles://${data.tileJSON.id}/{z}/{x}/{y}.pbf`,
+        ];
 
-      return [name, Object.assign({}, data.tileJSON, { tiles, type })];
-    }).filter(Boolean);
+        return [name, Object.assign({}, data.tileJSON, { tiles, type })];
+      })
+      .filter(Boolean);
 
     let { sprite } = styleJSON;
     if (spritePath) {
@@ -195,7 +211,7 @@ class RenderManager {
     return Object.assign({}, styleJSON, {
       glyphs: "fonts://{fontstack}/{range}.pbf",
       sprite,
-      sources: utils.fromEntries(sources)
+      sources: utils.fromEntries(sources),
     });
   }
 
@@ -207,15 +223,15 @@ class RenderManager {
     const renderers = [];
 
     function requestMap(url) {
-      const protocol = url.split(':')[0];
+      const protocol = url.split(":")[0];
 
-      if (protocol === 'sprites') {
+      if (protocol === "sprites") {
         return requestSprites(url);
-      } else if (protocol === 'fonts') {
+      } else if (protocol === "fonts") {
         return requestFonts(url);
-      } else if (protocol === 'mbtiles') {
+      } else if (protocol === "mbtiles") {
         return requestMbtiles(url, dataDecoratorFunc);
-      } else if (protocol === 'http' || protocol === 'https') {
+      } else if (protocol === "http" || protocol === "https") {
         return requestUrl(url);
       } else {
         return Promise.reject(new Error(`Unkown protocol: ${protocol}`));
@@ -229,13 +245,13 @@ class RenderManager {
           ratio: ratio,
           request: (req, callback) => {
             try {
-            requestMap(req.url)
-              .then((data) => callback(null, data))
-              .catch((err) => callback(err, null));
-            } catch(e) {
+              requestMap(req.url)
+                .then((data) => callback(null, data))
+                .catch((err) => callback(err, null));
+            } catch (e) {
               console.error(e);
             }
-          }
+          },
         });
 
         renderer.load(styleJSON);
@@ -246,9 +262,9 @@ class RenderManager {
         min: min,
         max: max,
         create: createRenderer.bind(null, ratio),
-        destroy: renderer => {
+        destroy: (renderer) => {
           renderer.release();
-        }
+        },
       });
     };
 
@@ -263,14 +279,14 @@ class RenderManager {
     }
 
     const tileJSON = {
-      'tilejson': '2.0.0',
-      'name': styleJSON.name,
-      'attribution': '',
-      'minzoom': 0,
-      'maxzoom': 20,
-      'bounds': [-180, -85.0511, 180, 85.0511],
-      'format': 'png',
-      'type': 'baselayer'
+      tilejson: "2.0.0",
+      name: styleJSON.name,
+      attribution: "",
+      minzoom: 0,
+      maxzoom: 20,
+      bounds: [-180, -85.0511, 180, 85.0511],
+      format: "png",
+      type: "baselayer",
     };
 
     const attributionOverride = item.tilejson && item.tilejson.attribution;
@@ -283,7 +299,7 @@ class RenderManager {
       renderers,
       dataProjWGStoInternalWGS: null,
       lastModified: new Date().toUTCString(),
-      watermark: item.watermark || this.options.watermark
+      watermark: item.watermark || this.options.watermark,
     };
 
     return mapRenderer;

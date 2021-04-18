@@ -1,10 +1,10 @@
-const StyleManager = require('../managers/style');
-const FontManager = require('../managers/font');
-const DataManager = require('../managers/data');
-const RenderManager = require('../managers/render');
+const StyleManager = require("../managers/style");
+const FontManager = require("../managers/font");
+const DataManager = require("../managers/data");
+const RenderManager = require("../managers/render");
 
-module.exports = function(options) {
-  return function(req, res, next) {
+module.exports = function (options) {
+  return function (req, res, next) {
     let started = StyleManager.instance && FontManager.instance && DataManager.instance;
 
     if (options.serveRendered) {
@@ -12,9 +12,9 @@ module.exports = function(options) {
     }
 
     if (started) {
-      res.status(200).send('OK');
+      res.status(200).send("OK");
     } else {
-      res.status(503).send('Starting');
+      res.status(503).send("Starting");
     }
-  }
-}
+  };
+};

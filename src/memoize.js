@@ -1,7 +1,7 @@
-const LRU = require('lru-cache');
-const allSettled = require('promise.allsettled');
+const LRU = require("lru-cache");
+const allSettled = require("promise.allsettled");
 
-const IS_TESTING = process.env.NODE_ENV === 'test';
+const IS_TESTING = process.env.NODE_ENV === "test";
 
 // The real cache TTL should start from request completion, not request initiation. But
 // we need to populate the cache as soon as the request starts to prevent thundering
@@ -25,10 +25,10 @@ const memoizedFunctions = new Set();
 exports.memoize = function memoize(fn, opts = {}) {
   const cache = new LRU({
     // This is just a default; in practice we should always pass our own TTL
-    maxAge: 'maxAge' in opts ? opts.maxAge : 10000,
+    maxAge: "maxAge" in opts ? opts.maxAge : 10000,
     // We never want to evict anything that has not hit its age limit
-    max: 'max' in opts ? opts.max : Infinity,
-    length: promise => (promise._byteLength || 1000) * 2 + 10000
+    max: "max" in opts ? opts.max : Infinity,
+    length: (promise) => (promise._byteLength || 1000) * 2 + 10000,
   });
 
   cache.pruneInterval = setInterval(() => {
@@ -39,7 +39,7 @@ exports.memoize = function memoize(fn, opts = {}) {
     const fromCache = cache.get(key);
 
     if (fromCache !== undefined) {
-      const cacheStatus = typeof fromCache._isFulfilled !== 'undefined' ? 'hit' : 'wait';
+      const cacheStatus = typeof fromCache._isFulfilled !== "undefined" ? "hit" : "wait";
       return { result: fromCache, cacheStatus };
     }
 
@@ -53,7 +53,7 @@ exports.memoize = function memoize(fn, opts = {}) {
       result._isFulfilled = true;
       result._byteLength = promise.value && promise.value.body && promise.value.body.byteLength;
 
-      if (promise.status === 'rejected') {
+      if (promise.status === "rejected") {
         maxAge = Math.min(maxAge, MAX_FAILURE_TTL);
       }
 
@@ -63,7 +63,7 @@ exports.memoize = function memoize(fn, opts = {}) {
     // Decorate the promise so that we know whether this function call generated
     // a new promise or used an existing one. Note that we don't care about whether
     // or not the promise was resolved, just that it already existed.
-    const cacheStatus = 'miss';
+    const cacheStatus = "miss";
     return { result, cacheStatus };
   };
 
@@ -76,7 +76,7 @@ exports.memoize = function memoize(fn, opts = {}) {
 
 exports.clearMemoizationCache = function clearMemoizationCache() {
   if (!IS_TESTING) {
-    throw new Error('Cache clearing only available in testing mode');
+    throw new Error("Cache clearing only available in testing mode");
   }
 
   for (const cache of memoizedFunctions) {

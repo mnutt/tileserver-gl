@@ -1,7 +1,7 @@
-const { loadImage } = require('canvas');
+const { loadImage } = require("canvas");
 const TIMEOUT = 3000;
 
-exports.get = function(markerUrl) {
+exports.get = function (markerUrl) {
   const timer = new Promise((_, reject) => {
     setTimeout(() => reject(new Error("Timeout")), TIMEOUT);
   });

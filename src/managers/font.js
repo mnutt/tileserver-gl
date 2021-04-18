@@ -1,6 +1,6 @@
-const fs = require('fs').promises;
-const path = require('path');
-const glyphCompose = require('@mapbox/glyph-pbf-composite');
+const fs = require("fs").promises;
+const path = require("path");
+const glyphCompose = require("@mapbox/glyph-pbf-composite");
 
 function toObject(list) {
   return list.reduce((acc, item) => {
@@ -10,9 +10,9 @@ function toObject(list) {
 }
 
 class FontManager {
-  constructor(options, allowedFonts, serveAllFonts=true) {
+  constructor(options, allowedFonts, serveAllFonts = true) {
     const { root, fonts } = options.paths;
-    this.fontsPath = path.resolve(root || '', fonts || 'fonts');
+    this.fontsPath = path.resolve(root || "", fonts || "fonts");
     this.allowedFonts = allowedFonts ? toObject(allowedFonts) : null;
     this.existingFonts = {};
     this.loaded = false;
@@ -38,7 +38,7 @@ class FontManager {
       this.allowedFonts = {};
     }
 
-    for(let font of fontsList) {
+    for (let font of fontsList) {
       this.allowedFonts[font] = true;
     }
   }
@@ -54,9 +54,9 @@ class FontManager {
 
       if (stats.isDirectory()) {
         try {
-          await fs.access(path.join(fontsPath, name, '0-255.pbf'), fs.constants.F_OK);
+          await fs.access(path.join(fontsPath, name, "0-255.pbf"), fs.constants.F_OK);
           existingFonts[path.basename(name)] = true;
-        } catch(_) {}
+        } catch (_) {}
       }
       existingFonts[path.basename(name)] = true;
     }
@@ -65,15 +65,15 @@ class FontManager {
   }
 
   allowedFont(name) {
-    return (!this.allowedFonts) || (!!this.allowedFonts[name]);
+    return !this.allowedFonts || !!this.allowedFonts[name];
   }
 
   // Prefer a fallback that is the same font style as the originally requested font
   chooseFallback(name, fallbacks) {
     let fallbackName;
-    let fontStyle = name.split(' ').pop();
-    if (['Regular', 'Bold', 'Italic'].indexOf(fontStyle) < 0) {
-      fontStyle = 'Regular';
+    let fontStyle = name.split(" ").pop();
+    if (["Regular", "Bold", "Italic"].indexOf(fontStyle) < 0) {
+      fontStyle = "Regular";
     }
 
     const notoSansStyle = `Noto Sans ${fontStyle}`;
@@ -89,24 +89,24 @@ class FontManager {
     return fallbacks[0];
   }
 
-  async getFontPbf(name, range, fallbacks=[]) {
+  async getFontPbf(name, range, fallbacks = []) {
     if (!this.allowedFont(name)) {
       throw new Error(`Font not allowed: ${name}`);
     }
 
-    fallbacks = fallbacks.filter(f => f !== name);
+    fallbacks = fallbacks.filter((f) => f !== name);
 
     const filename = path.join(this.fontsPath, name, `${range}.pbf`);
 
     try {
       const file = await fs.readFile(filename);
       return file;
-    } catch(e) {
+    } catch (e) {
       console.error(`Font not found: ${name}`);
 
       if (fallbacks && fallbacks.length) {
         const fallback = this.chooseFallback(name, fallbacks);
-        const updatedFallbacks = fallbacks.filter(f => f !== fallback);
+        const updatedFallbacks = fallbacks.filter((f) => f !== fallback);
 
         return this.getFontPbf(fallback, range, updatedFallbacks);
       } else {
@@ -119,7 +119,7 @@ class FontManager {
     const fonts = names.split(/,\s?/);
     const fallbacks = Object.keys(this.allowedFonts || this.existingFonts);
 
-    const pbfs = await Promise.all(fonts.map(f => this.getFontPbf(f, range, fallbacks)));
+    const pbfs = await Promise.all(fonts.map((f) => this.getFontPbf(f, range, fallbacks)));
     return glyphCompose.combine(pbfs);
   }
 

@@ -1,13 +1,13 @@
-const zlib = require('zlib');
-const util = require('util');
-const DataManager = require('../managers/data');
-const { Router } = require('express');
-const utils = require('../utils');
-const { asyncRoute } = require('./support');
+const zlib = require("zlib");
+const util = require("util");
+const DataManager = require("../managers/data");
+const { Router } = require("express");
+const utils = require("../utils");
+const { asyncRoute } = require("./support");
 
 const unzip = util.promisify(zlib.unzip);
 
-module.exports = function(options) {
+module.exports = function (options) {
   async function dataCoordinatesRoute(req, res, next) {
     const item = DataManager.instance.get(req.params.id);
 
@@ -23,44 +23,48 @@ module.exports = function(options) {
 
     let format = req.params.format;
     if (format === options.pbfAlias) {
-      format = 'pbf';
+      format = "pbf";
     }
 
-    if (format !== tileJSONFormat &&
-        !(format === 'geojson' && tileJSONFormat === 'pbf')) {
-      return res.status(404).send('Invalid format');
+    if (format !== tileJSONFormat && !(format === "geojson" && tileJSONFormat === "pbf")) {
+      return res.status(404).send("Invalid format");
     }
 
-    if (z < item.tileJSON.minzoom || 0 || x < 0 || y < 0 ||
-        z > item.tileJSON.maxzoom ||
-        x >= Math.pow(2, z) || y >= Math.pow(2, z)) {
-      return res.status(404).send('Out of bounds');
+    if (
+      z < item.tileJSON.minzoom ||
+      0 ||
+      x < 0 ||
+      y < 0 ||
+      z > item.tileJSON.maxzoom ||
+      x >= Math.pow(2, z) ||
+      y >= Math.pow(2, z)
+    ) {
+      return res.status(404).send("Out of bounds");
     }
 
     try {
       const { data, headers } = await item.source.getTile(z, x, y);
 
       if (data == null) {
-        return res.status(404).send('Not found');
+        return res.status(404).send("Not found");
       }
 
       let isGzipped = false;
-      if (tileJSONFormat === 'pbf') {
-        isGzipped = data.slice(0, 2).indexOf(
-          Buffer.from([0x1f, 0x8b])) === 0;
+      if (tileJSONFormat === "pbf") {
+        isGzipped = data.slice(0, 2).indexOf(Buffer.from([0x1f, 0x8b])) === 0;
         if (options.dataDecoratorFunc) {
           if (isGzipped) {
             data = await unzip(data);
             isGzipped = false;
           }
-          data = options.dataDecoratorFunc(req.params.id, 'data', data, z, x, y);
+          data = options.dataDecoratorFunc(req.params.id, "data", data, z, x, y);
         }
       }
 
-      if (format === 'pbf') {
-        headers['Content-Type'] = 'application/x-protobuf';
-      } else if (format === 'geojson') {
-        headers['Content-Type'] = 'application/json';
+      if (format === "pbf") {
+        headers["Content-Type"] = "application/x-protobuf";
+      } else if (format === "geojson") {
+        headers["Content-Type"] = "application/json";
 
         if (isGzipped) {
           data = await unzip(data);
@@ -69,8 +73,8 @@ module.exports = function(options) {
 
         const tile = new VectorTile(new Pbf(data));
         const geojson = {
-          "type": "FeatureCollection",
-          "features": []
+          type: "FeatureCollection",
+          features: [],
         };
 
         for (let layerName in tile.layers) {
@@ -85,8 +89,8 @@ module.exports = function(options) {
         data = JSON.stringify(geojson);
       }
 
-      delete headers['ETag']; // do not trust the tile ETag -- regenerate
-      headers['Content-Encoding'] = 'gzip';
+      delete headers["ETag"]; // do not trust the tile ETag -- regenerate
+      headers["Content-Encoding"] = "gzip";
       res.set(headers);
 
       if (!isGzipped) {
@@ -113,14 +117,15 @@ module.exports = function(options) {
     }
 
     const info = Object.assign({}, item.tileJSON);
-    info.tiles = utils.getTileUrls(req, info.tiles, `data/${id}`, info.format,
-                                   options.publicUrl, { 'pbf': options.pbfAlias });
+    info.tiles = utils.getTileUrls(req, info.tiles, `data/${id}`, info.format, options.publicUrl, {
+      pbf: options.pbfAlias,
+    });
     return res.send(info);
   }
 
   const routes = new Router();
-  routes.get('/:id.json', asyncRoute(dataRoute));
-  routes.get('/:id/:z(\\d+)/:x(\\d+)/:y(\\d+).:format([\\w.]+)', asyncRoute(dataCoordinatesRoute));
+  routes.get("/:id.json", asyncRoute(dataRoute));
+  routes.get("/:id/:z(\\d+)/:x(\\d+)/:y(\\d+).:format([\\w.]+)", asyncRoute(dataCoordinatesRoute));
 
   return routes;
-}
+};
