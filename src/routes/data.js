@@ -2,6 +2,8 @@ const zlib = require('zlib');
 const util = require('util');
 const DataManager = require('../managers/data');
 const { Router } = require('express');
+const utils = require('../utils');
+const { asyncRoute } = require('./support');
 
 const unzip = util.promisify(zlib.unzip);
 
@@ -100,69 +102,6 @@ module.exports = function(options) {
         return res.status(500).send(err.message);
       }
     }
-
-    item.source.getTile(z, x, y, (err, data, headers) => {
-      let isGzipped;
-      if (err) {
-        if (/does not exist/.test(err.message)) {
-          return res.status(204).send();
-        } else {
-          return res.status(500).send(err.message);
-        }
-      } else {
-        if (data == null) {
-          return res.status(404).send('Not found');
-        } else {
-          if (tileJSONFormat === 'pbf') {
-            isGzipped = data.slice(0, 2).indexOf(
-              Buffer.from([0x1f, 0x8b])) === 0;
-            if (options.dataDecoratorFunc) {
-              if (isGzipped) {
-                data = zlib.unzipSync(data);
-                isGzipped = false;
-              }
-              data = options.dataDecoratorFunc(id, 'data', data, z, x, y);
-            }
-          }
-          if (format === 'pbf') {
-            headers['Content-Type'] = 'application/x-protobuf';
-          } else if (format === 'geojson') {
-            headers['Content-Type'] = 'application/json';
-
-            if (isGzipped) {
-              data = zlib.unzipSync(data);
-              isGzipped = false;
-            }
-
-            const tile = new VectorTile(new Pbf(data));
-            const geojson = {
-              "type": "FeatureCollection",
-              "features": []
-            };
-            for (let layerName in tile.layers) {
-              const layer = tile.layers[layerName];
-              for (let i = 0; i < layer.length; i++) {
-                const feature = layer.feature(i);
-                const featureGeoJSON = feature.toGeoJSON(x, y, z);
-                featureGeoJSON.properties.layer = layerName;
-                geojson.features.push(featureGeoJSON);
-              }
-            }
-            data = JSON.stringify(geojson);
-          }
-          delete headers['ETag']; // do not trust the tile ETag -- regenerate
-          headers['Content-Encoding'] = 'gzip';
-          res.set(headers);
-
-          if (!isGzipped) {
-            data = zlib.gzipSync(data);
-            isGzipped = true;
-          }
-
-          return res.status(200).send(data);
-        }
-      }
-    });
   }
 
   async function dataRoute(req, res, next) {
@@ -180,8 +119,8 @@ module.exports = function(options) {
   }
 
   const routes = new Router();
-  routes.get('/:id.json', dataRoute);
-  routes.get('/:id/:z(\\d+)/:x(\\d+)/:y(\\d+).:format([\\w.]+)', dataCoordinatesRoute);
+  routes.get('/:id.json', asyncRoute(dataRoute));
+  routes.get('/:id/:z(\\d+)/:x(\\d+)/:y(\\d+).:format([\\w.]+)', asyncRoute(dataCoordinatesRoute));
 
   return routes;
 }

@@ -84,6 +84,7 @@ const startServer = async (configPath, config) => {
   const DataManager = require('./managers/data');
   const FontManager = require('./managers/font');
   const RenderManager = require('./managers/render');
+  const TemplateManager = require('./managers/template');
 
   const styleManager = await StyleManager.init(config.options, config.styles);
   const dataManager = await DataManager.init(config.options, config.data);
@@ -97,6 +98,8 @@ const startServer = async (configPath, config) => {
   fontManager.allowFonts(styleManager.fontsList);
 
   await RenderManager.init(config.options, config.styles);
+
+  TemplateManager.init(['index', 'viewer', 'wmts', 'data']);
 
   const app = require('./app')(config.options);
 

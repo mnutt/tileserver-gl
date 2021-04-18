@@ -1,7 +1,9 @@
 const StyleManager = require('../managers/style');
+const DataManager = require('../managers/data');
 const utils = require('../utils');
 const { Router } = require('express');
 const fs = require('fs').promises;
+const { asyncRoute } = require('./support');
 
 const fixUrl = (req, url, publicUrl, opt_nokey) => {
   if (!url || (typeof url !== 'string') || url.indexOf('local://') !== 0) {
@@ -30,7 +32,12 @@ module.exports = function(options) {
 
     const styleJSON = Object.assign({}, item.styleJSON);
 
-    styleJSON.sources = Object.assign({}, styleJSON.sources);
+    const sources = Object.entries(styleJSON.sources).map(([id, source]) => {
+      const url = `local://data/${id}.json`;
+      return [id, Object.assign({}, source, { url })];
+    });
+
+      styleJSON.sources = Object.assign({}, utils.fromEntries(sources));
 
     for (const name of Object.keys(styleJSON.sources)) {
       const source = styleJSON.sources[name];
@@ -77,8 +84,8 @@ module.exports = function(options) {
   }
 
   const routes = new Router();
-  routes.get('/:id/style.json', getStyleRoute);
-  routes.get('/:id/sprite:scale(@[23]x)?.:format([\\w]+)', getStyleSpriteRoute);
+  routes.get('/:id/style.json', asyncRoute(getStyleRoute));
+  routes.get('/:id/sprite:scale(@[23]x)?.:format([\\w]+)', asyncRoute(getStyleSpriteRoute));
 
   return routes;
 }

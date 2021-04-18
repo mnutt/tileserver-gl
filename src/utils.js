@@ -129,3 +129,10 @@ module.exports.getFontsPbf = (allowedFonts, fontPath, names, range, fallbacks) =
 
   return Promise.all(queue).then(values => glyphCompose.combine(values));
 };
+
+module.exports.fromEntries = function fromEntries(arr) {
+  return arr.reduce((obj, [key, val]) => {
+    obj[key] = val
+    return obj
+  }, {});
+};

@@ -48,6 +48,10 @@ class StyleManager {
     return Object.values(this.styles).map(style => style.sourceList).reduce(flatten, []);
   }
 
+  allTiles() {
+    return Object.entries(this.styles).map(([id, item]) => [id, item.tileJSON]);
+  }
+
   get(id) {
     return this.styles[id];
   }

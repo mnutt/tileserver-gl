@@ -1,16 +1,24 @@
 const { URL }= require('url');
-const FontManager = require('./font');
-const StyleManager = require('./style');
-const DataManager = require('./data');
+const FontManager = require('./font_manager');
+const StyleManager = require('./style_manager');
+const DataManager = require('./data_manager');
 const advancedPool = require('advanced-pool');
 const mbgl = require('@mapbox/mapbox-gl-native');
-const utils = require('../utils');
+const utils = require('./utils');
 const fs = require('fs').promises;
 const path = require('path');
+
 const zlib = require('zlib');
 const util = require('util');
 
 const unzip = util.promisify(zlib.unzip);
+
+function fromEntries(arr) {
+  return arr.reduce((obj, [key, val]) => {
+    obj[key] = val
+    return obj
+  }, {});
+}
 
 async function requestSprites(url) {
   const protocol = url.split(':')[0];
@@ -113,6 +121,7 @@ class RenderManager {
   constructor(options) {
     this.options = options;
     this.repo = {};
+    this.styles = {};
     this.maxScaleFactor = Math.min(Math.floor(options.maxScaleFactor || 3), 9);
   }
 
@@ -136,8 +145,8 @@ class RenderManager {
     return this.repo[id];
   }
 
-  allTiles() {
-    return Object.entries(this.repo).map(([id, renderer]) => [id, renderer.tileJSON]);
+  getStyle(id) {
+    return this.styles[id];
   }
 
   remove(id) {
@@ -195,7 +204,7 @@ class RenderManager {
     return Object.assign({}, styleJSON, {
       glyphs: "fonts://{fontstack}/{range}.pbf",
       sprite,
-      sources: utils.fromEntries(sources)
+      sources: fromEntries(sources)
     });
   }
 
@@ -203,6 +212,8 @@ class RenderManager {
     const style = StyleManager.instance.get(id);
     const styleJSON = this.rewriteStyleSources(style);
     const { dataDecoratorFunc } = this.options;
+
+    this.styles[id] = styleJSON;
 
     const renderers = [];
 

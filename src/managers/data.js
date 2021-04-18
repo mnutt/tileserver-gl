@@ -33,6 +33,10 @@ class DataManager {
     this.aliases = {};
   }
 
+  allTiles() {
+    return Object.entries(this.data).map(([id, item]) => [id, item.tileJSON]);
+  }
+
   static async init(options, data) {
     const manager = new DataManager(options);
 

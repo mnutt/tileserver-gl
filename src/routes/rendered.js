@@ -1,4 +1,7 @@
 const RenderManager = require('../managers/render');
+const StyleManager = require('../managers/style');
+const DataManager = require('../managers/data');
+
 const { Router } = require('express');
 const util = require('util');
 
@@ -533,6 +536,102 @@ module.exports = function(options) {
     return renderBoundsRoute(req, res, next);
   }
 
+  async function renderMarkersRoute(req, res, next) {
+    const { id } = req.params;
+    const item = RenderManager.instance.get(id);
+
+    if (!item) {
+      return res.sendStatus(404);
+    }
+
+    let w = req.params.width | 0,
+        h = req.params.height | 0,
+        z = req.params.z,
+        x = +req.params.x,
+        y = +req.params.y,
+        bearing = +(req.params.bearing || '0'),
+        pitch = +(req.params.pitch || '0'),
+        scale = getScale(req.params.scale),
+        format = formats[req.params.format];
+
+    const markerList = markers.parse(req.params.overlay);
+
+    const bbox = [Infinity, Infinity, -Infinity, -Infinity];
+
+    for (const marker of markerList) {
+      bbox[0] = Math.min(bbox[0], marker.x);
+      bbox[1] = Math.min(bbox[1], marker.y);
+      bbox[2] = Math.max(bbox[2], marker.x);
+      bbox[3] = Math.max(bbox[3], marker.y);
+    }
+
+    const bbox_ = mercator.convert(bbox, '900913');
+    const center = mercator.inverse(
+      [(bbox_[0] + bbox_[2]) / 2, (bbox_[1] + bbox_[3]) / 2]
+    );
+
+    if (z === "auto") {
+      z = calcZForBBox(bbox, w, h, req.query);
+      x = center[0];
+      y = center[1];
+
+      z = Math.min(z, 17);
+    } else {
+      z = +z;
+    }
+
+    const fetchedMarkersList = await Promise.all(markerList.map(m => {
+      return markers.fetch(m).catch(e => console.error(e));
+    }));
+
+    const overlay = renderMarkersOverlay(z, x, y, bearing, pitch, w, h, scale, fetchedMarkersList.filter(Boolean));
+
+    const image = await renderMapImage(item, z, x, y, 0, 0, w, h, scale);
+
+    image = image.composite([ {input: overlay} ]);
+
+    if (item.watermark) {
+      const watermark = renderWatermarkOverlay(item.watermark, w, h, scale);
+      image = image.composite([ {input: watermark} ]);
+    }
+
+    imageOutput = formatImage(image, format);
+
+    const { data: buffer, info } = await imageOutput.toBuffer({ resolveWithObject: true });
+
+    if (!buffer) {
+      throw new NotFoundError();
+    }
+
+    res.set({
+      'Last-Modified': item.lastModified,
+      'Content-Type': `image/${format}`
+    });
+    res.status(200).send(buffer);
+  }
+
+  function renderStaticRoute(req, res, next) {
+    for (let key in req.query) {
+      req.query[key.toLowerCase()] = req.query[key];
+    }
+    req.params.raw = true;
+    req.params.format = (req.query.format || 'image/png').split('/').pop();
+    const bbox = (req.query.bbox || '').split(',');
+    req.params.minx = bbox[0];
+    req.params.miny = bbox[1];
+    req.params.maxx = bbox[2];
+    req.params.maxy = bbox[3];
+    req.params.width = req.query.width || '256';
+    req.params.height = req.query.height || '256';
+    if (req.query.scale) {
+      req.params.width /= req.query.scale;
+      req.params.height /= req.query.scale;
+      req.params.scale = `@${req.query.scale}`;
+    }
+
+    return renderBoundsRoute(req, res, next);
+  }
+
   async function renderAutoRoute(req, res, next) {
     const { id } = req.params;
     const item = RenderManager.instance.get(id);
@@ -603,6 +702,24 @@ module.exports = function(options) {
     res.status(200).send(buffer);
   }
 
+  function getStyle(req, res, next) {
+    const item = RenderManager.instance.get(req.params.id);
+
+    if(!item) {
+      throw new NotFoundError();
+    }
+
+    //console.log("D", data, req.params.id, Object.keys(DataManager.instance.data));
+
+    console.log("INFO", item.tileJSON);
+    const info = item.tileJSON;
+    const tiles = utils.getTileUrls(req, info.tiles, `styles/${req.params.id}`, info.format, item.publicUrl);
+
+    //console.log(util.inspect(Object.assign({}, item.styleJSON, { tiles }), {showHidden: false, depth: null}))
+
+    return res.send(Object.assign({}, item.tileJSON, { tiles }));
+  }
+
   const routes = new Router();
   const scalePattern = RenderManager.scalePattern(options.maxScaleFactor);
 
@@ -614,7 +731,10 @@ module.exports = function(options) {
              asyncRoute(renderBoundsRoute));
   routes.get(`/:id/static/:raw(raw)?/${autoPattern}/:width(\\d+)x:height(\\d+):scale(${scalePattern})?.:format([\\w]+)`,
              asyncRoute(renderAutoRoute));
+  routes.get(`/:id/static/:overlay(pin-[^/]+)/${autoPattern}/:width(\\d+)x:height(\\d+):scale(${scalePattern})?.:format([\\w]+)`,
+            asyncRoute(renderMarkersRoute));
   routes.get('/:id/static', asyncRoute(renderStaticRoute));
+  routes.get('/:id.json', asyncRoute(getStyle));
 
   return routes;
 };
