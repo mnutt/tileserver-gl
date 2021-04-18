@@ -19,7 +19,8 @@
   },
   "scripts": {
     "test": "mocha",
-    "docker": "docker build -f Dockerfile . && docker run --rm -i -p 8080:80 $(docker build -q .)"
+    "docker": "docker build -f Dockerfile . && docker run --rm -i -p 8080:80 $(docker build -q .)",
+    "lint": "eslint ."
   },
   "dependencies": {
     "@mapbox/glyph-pbf-composite": "0.0.3",
@@ -48,8 +49,13 @@
     "tileserver-gl-styles": "2.0.0"
   },
   "devDependencies": {
+    "eslint": "^7.24.0",
+    "eslint-config-prettier": "^8.2.0",
+    "eslint-plugin-node": "^11.1.0",
+    "eslint-plugin-prettier": "^3.4.0",
     "mocha": "^8.3.2",
     "mockery": "^2.1.0",
+    "prettier": "^2.2.1",
     "should": "^13.2.3",
     "supertest": "^4.0.2"
   },
