@@ -709,13 +709,8 @@ module.exports = function(options) {
       throw new NotFoundError();
     }
 
-    //console.log("D", data, req.params.id, Object.keys(DataManager.instance.data));
-
-    console.log("INFO", item.tileJSON);
     const info = item.tileJSON;
     const tiles = utils.getTileUrls(req, info.tiles, `styles/${req.params.id}`, info.format, item.publicUrl);
-
-    //console.log(util.inspect(Object.assign({}, item.styleJSON, { tiles }), {showHidden: false, depth: null}))
 
     return res.send(Object.assign({}, item.tileJSON, { tiles }));
   }

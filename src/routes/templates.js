@@ -165,7 +165,6 @@ module.exports = function(options) {
       serving_rendered: !!RenderManager.instance.get(id)
     }, defaultData(req));
 
-    console.log(response);
     res.status(200).send(template(response));
   }
 

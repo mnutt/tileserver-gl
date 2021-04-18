@@ -164,3 +164,4 @@ class DataManager {
 }
 
 module.exports = DataManager;
+module.exports.DataSource = DataSource;

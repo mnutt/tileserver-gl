@@ -9,8 +9,10 @@ class TemplateManager {
     this.compiled = {};
   }
 
-  static async init(templateNames) {
+  static async init() {
     const manager = new TemplateManager();
+
+    const templateNames = await fs.readdir(templatesPath);
 
     for (let templateName of templateNames) {
       manager.add(templateName);
@@ -20,11 +22,12 @@ class TemplateManager {
     return manager;
   }
 
-  async add(templateName) {
-    const templatePath = path.join(templatesPath, `${templateName}.tmpl`);
+  async add(templateFile) {
+    const templatePath = path.join(templatesPath, templateFile);
     const templateData = await fs.readFile(templatePath);
     const compiledTemplate = handlebars.compile(templateData.toString());
 
+    const templateName = templateFile.replace(/\.tmpl$/, '');
     this.compiled[templateName] = compiledTemplate;
   }
 
