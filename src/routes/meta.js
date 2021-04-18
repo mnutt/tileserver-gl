@@ -32,19 +32,19 @@ module.exports = function (options) {
     });
   }
 
-  function renderedTiles(req, res, next) {
+  function renderedTiles(req, res) {
     const tiles = RenderManager.instance.allTiles();
 
     res.send(formatTiles(req, tiles, "rendered"));
   }
 
-  function dataTiles(req, res, next) {
+  function dataTiles(req, res) {
     const tiles = DataManager.instance.allTiles();
 
     res.send(formatTiles(req, tiles, "data"));
   }
 
-  function allTiles(req, res, next) {
+  function allTiles(req, res) {
     const renderedTiles = RenderManager.instance.allTiles();
     const dataTiles = RenderManager.instance.allTiles();
 
@@ -54,7 +54,7 @@ module.exports = function (options) {
     res.send(rendered.concat(data));
   }
 
-  function allStyles(req, res, next) {
+  function allStyles(req, res) {
     const styles = Object.entries(StyleManager.instance.styles);
 
     const response = styles.map(([id, item]) => {

@@ -56,7 +56,9 @@ class FontManager {
         try {
           await fs.access(path.join(fontsPath, name, "0-255.pbf"), fs.constants.F_OK);
           existingFonts[path.basename(name)] = true;
-        } catch (_) {}
+        } catch (_) {
+          // ignore
+        }
       }
       existingFonts[path.basename(name)] = true;
     }
@@ -70,7 +72,6 @@ class FontManager {
 
   // Prefer a fallback that is the same font style as the originally requested font
   chooseFallback(name, fallbacks) {
-    let fallbackName;
     let fontStyle = name.split(" ").pop();
     if (["Regular", "Bold", "Italic"].indexOf(fontStyle) < 0) {
       fontStyle = "Regular";

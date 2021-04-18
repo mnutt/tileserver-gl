@@ -4,11 +4,13 @@ const DataManager = require("../managers/data");
 const { Router } = require("express");
 const utils = require("../utils");
 const { asyncRoute } = require("./support");
+const { VectorTile } = require("@mapbox/vector-tile");
+const Pbf = require("pbf");
 
 const unzip = util.promisify(zlib.unzip);
 
 module.exports = function (options) {
-  async function dataCoordinatesRoute(req, res, next) {
+  async function dataCoordinatesRoute(req, res) {
     const item = DataManager.instance.get(req.params.id);
 
     if (!item) {
@@ -43,7 +45,7 @@ module.exports = function (options) {
     }
 
     try {
-      const { data, headers } = await item.source.getTile(z, x, y);
+      let { data, headers } = await item.source.getTile(z, x, y);
 
       if (data == null) {
         return res.status(404).send("Not found");
@@ -108,7 +110,7 @@ module.exports = function (options) {
     }
   }
 
-  async function dataRoute(req, res, next) {
+  async function dataRoute(req, res) {
     const { id } = req.params;
     const item = DataManager.instance.get(id);
 

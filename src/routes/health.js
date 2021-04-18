@@ -4,7 +4,7 @@ const DataManager = require("../managers/data");
 const RenderManager = require("../managers/render");
 
 module.exports = function (options) {
-  return function (req, res, next) {
+  return function (req, res) {
     let started = StyleManager.instance && FontManager.instance && DataManager.instance;
 
     if (options.serveRendered) {

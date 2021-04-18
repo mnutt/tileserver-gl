@@ -2,7 +2,7 @@ const FontManager = require("../managers/font");
 const { Router } = require("express");
 
 module.exports = () => {
-  async function fontStackRoute(req, res, next) {
+  async function fontStackRoute(req, res) {
     const { fontstack, range } = req.params;
 
     const fontManager = FontManager.instance;
@@ -18,10 +18,10 @@ module.exports = () => {
     }
   }
 
-  function fontListRoute(req, res, next) {
+  function fontListRoute(req, res) {
     res.header("Content-type", "application/json");
 
-    return res.send(fontManager.list());
+    return res.send(FontManager.instance.list());
   }
 
   const routes = new Router();

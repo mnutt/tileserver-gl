@@ -2,7 +2,7 @@ const { memoize } = require("../memoize");
 const generatedMarker = require("./generated");
 const urlMarker = require("./url");
 
-const innerMarkerRegex = /(url|pin|ref)-([^\(]+)\(([0-9\.\-]+),([0-9\.\-]+)\)(\:\d*)?/g;
+const innerMarkerRegex = /(url|pin|ref)-([^(]+)\(([0-9.-]+),([0-9.-]+)\)(:\d*)?/g;
 
 exports.parse = function (markerList = "") {
   let result,
@@ -10,7 +10,7 @@ exports.parse = function (markerList = "") {
     refs = {};
 
   while (((result = innerMarkerRegex.exec(markerList)), result != null)) {
-    let [_, type, url, x, y, ref] = result;
+    let [, type, url, x, y, ref] = result;
 
     if (type === "pin") {
       url = "generated:" + url;

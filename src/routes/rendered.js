@@ -1,24 +1,14 @@
 const RenderManager = require("../managers/render");
-const StyleManager = require("../managers/style");
-const DataManager = require("../managers/data");
 
 const { Router } = require("express");
 const util = require("util");
 
 const sharp = require("sharp");
 const { createCanvas } = require("canvas");
-const Color = require("color");
 const mercator = new (require("@mapbox/sphericalmercator"))();
 const utils = require("../utils");
 const markers = require("../markers");
 const { BadRequestError, NotFoundError, asyncRoute } = require("./support");
-
-const formats = {
-  png: "png",
-  webp: "webp",
-  jpg: "jpeg",
-  jpeg: "jpeg",
-};
 
 const getScale = (scale) => (scale || "@1x").slice(1, 2) | 0;
 
@@ -39,62 +29,6 @@ const boundsPattern = util.format(
   floatPattern,
   floatPattern
 );
-
-const httpTester = /^(http(s)?:)?\/\//;
-
-/**
- * Cache of response data by sharp output format and color.  Entry for empty
- * string is for unknown or unsupported formats.
- */
-const cachedEmptyResponses = {
-  "": Buffer.alloc(0),
-};
-
-/**
- * Create an appropriate mbgl response for http errors.
- * @param {string} format The format (a sharp format or 'pbf').
- * @param {string} color The background color (or empty string for transparent).
- * @param {Function} callback The mbgl callback.
- */
-function createEmptyResponse(format, color, callback) {
-  if (!format || format === "pbf") {
-    callback(null, { data: cachedEmptyResponses[""] });
-    return;
-  }
-
-  if (format === "jpg") {
-    format = "jpeg";
-  }
-  if (!color) {
-    color = "rgba(255,255,255,0)";
-  }
-
-  const cacheKey = `${format},${color}`;
-  const data = cachedEmptyResponses[cacheKey];
-  if (data) {
-    callback(null, { data: data });
-    return;
-  }
-
-  // create an "empty" response image
-  color = new Color(color);
-  const array = color.array();
-  const channels = array.length === 4 && format !== "jpeg" ? 4 : 3;
-  sharp(Buffer.from(array), {
-    raw: {
-      width: 1,
-      height: 1,
-      channels: channels,
-    },
-  })
-    .toFormat(format)
-    .toBuffer((err, buffer, info) => {
-      if (!err) {
-        cachedEmptyResponses[cacheKey] = buffer;
-      }
-      callback(null, { data: buffer });
-    });
-}
 
 const extractPathFromQuery = (query, transformer) => {
   const pathParts = (query.path || "").split("|");
@@ -328,9 +262,9 @@ module.exports = function (options) {
     ctx.font = "10px sans-serif";
     ctx.strokeWidth = "1px";
     ctx.strokeStyle = "rgba(255,255,255,.4)";
-    ctx.strokeText(item.watermark, 5, height - 5);
+    ctx.strokeText(watermark, 5, height - 5);
     ctx.fillStyle = "rgba(0,0,0,.4)";
-    ctx.fillText(item.watermark, 5, height - 5);
+    ctx.fillText(watermark, 5, height - 5);
 
     return canvas.toBuffer();
   }
@@ -349,7 +283,7 @@ module.exports = function (options) {
     }
   }
 
-  async function renderRoute(req, res, next) {
+  async function renderRoute(req, res) {
     const item = RenderManager.instance.get(req.params.id);
 
     if (!item) {
@@ -368,7 +302,7 @@ module.exports = function (options) {
       x = req.params.x | 0,
       y = req.params.y | 0,
       scale = getScale(req.params.scale),
-      format = formats[req.params.format];
+      format = RenderManager.formats[req.params.format];
     if (z < 0 || x < 0 || y < 0 || z > 22 || x >= Math.pow(2, z) || y >= Math.pow(2, z)) {
       throw new NotFoundError("Out of bounds");
     }
@@ -378,7 +312,7 @@ module.exports = function (options) {
       z
     );
 
-    const image = await renderMapImage(
+    let image = await renderMapImage(
       item,
       z,
       tileCenter[0],
@@ -395,9 +329,9 @@ module.exports = function (options) {
       image = image.composite([{ input: watermark }]);
     }
 
-    imageOutput = formatImage(image, format);
+    const imageOutput = formatImage(image, format);
 
-    const { data: buffer, info } = await imageOutput.toBuffer({ resolveWithObject: true });
+    const buffer = await imageOutput.toBuffer();
 
     if (!buffer) {
       throw new NotFoundError();
@@ -410,7 +344,7 @@ module.exports = function (options) {
     res.status(200).send(buffer);
   }
 
-  async function renderCenterRoute(req, res, next) {
+  async function renderCenterRoute(req, res) {
     const item = RenderManager.instance.get(req.params.id);
 
     if (!item) {
@@ -426,7 +360,7 @@ module.exports = function (options) {
       w = req.params.width | 0,
       h = req.params.height | 0,
       scale = getScale(req.params.scale),
-      format = formats[req.params.format];
+      format = RenderManager.formats[req.params.format];
 
     if (z < 0) {
       throw new NotFoundError("Invalid zoom");
@@ -443,7 +377,7 @@ module.exports = function (options) {
     const path = extractPathFromQuery(req.query, transformer);
     const overlay = renderOverlay(z, x, y, bearing, pitch, w, h, scale, path, req.query);
 
-    const image = await renderMapImage(item, z, x, y, 0, 0, w, h, scale);
+    let image = await renderMapImage(item, z, x, y, 0, 0, w, h, scale);
 
     if (overlay) {
       image = image.composite([{ input: overlay }]);
@@ -454,9 +388,9 @@ module.exports = function (options) {
       image = image.composite([{ input: watermark }]);
     }
 
-    imageOutput = formatImage(image, format);
+    const imageOutput = formatImage(image, format);
 
-    const { data: buffer, info } = await imageOutput.toBuffer({ resolveWithObject: true });
+    const buffer = await imageOutput.toBuffer();
 
     if (!buffer) {
       throw new NotFoundError();
@@ -469,7 +403,7 @@ module.exports = function (options) {
     res.status(200).send(buffer);
   }
 
-  async function renderBoundsRoute(req, res, next) {
+  async function renderBoundsRoute(req, res) {
     const { id } = req.params;
     const item = RenderManager.instance.get(id);
 
@@ -496,7 +430,7 @@ module.exports = function (options) {
     const w = req.params.width | 0,
       h = req.params.height | 0,
       scale = getScale(req.params.scale),
-      format = formats[req.params.format];
+      format = RenderManager.formats[req.params.format];
 
     const z = calcZForBBox(bbox, w, h, req.query),
       x = center[0],
@@ -507,7 +441,7 @@ module.exports = function (options) {
     const path = extractPathFromQuery(req.query, transformer);
     const overlay = renderOverlay(z, x, y, bearing, pitch, w, h, scale, path, req.query);
 
-    const image = await renderMapImage(item, z, x, y, 0, 0, w, h, scale);
+    let image = await renderMapImage(item, z, x, y, 0, 0, w, h, scale);
 
     if (overlay) {
       image = image.composite([{ input: overlay }]);
@@ -518,9 +452,9 @@ module.exports = function (options) {
       image = image.composite([{ input: watermark }]);
     }
 
-    imageOutput = formatImage(image, format);
+    const imageOutput = formatImage(image, format);
 
-    const { data: buffer, info } = await imageOutput.toBuffer({ resolveWithObject: true });
+    const buffer = await imageOutput.toBuffer();
 
     if (!buffer) {
       throw new NotFoundError();
@@ -533,29 +467,7 @@ module.exports = function (options) {
     res.status(200).send(buffer);
   }
 
-  function renderStaticRoute(req, res, next) {
-    for (let key in req.query) {
-      req.query[key.toLowerCase()] = req.query[key];
-    }
-    req.params.raw = true;
-    req.params.format = (req.query.format || "image/png").split("/").pop();
-    const bbox = (req.query.bbox || "").split(",");
-    req.params.minx = bbox[0];
-    req.params.miny = bbox[1];
-    req.params.maxx = bbox[2];
-    req.params.maxy = bbox[3];
-    req.params.width = req.query.width || "256";
-    req.params.height = req.query.height || "256";
-    if (req.query.scale) {
-      req.params.width /= req.query.scale;
-      req.params.height /= req.query.scale;
-      req.params.scale = `@${req.query.scale}`;
-    }
-
-    return renderBoundsRoute(req, res, next);
-  }
-
-  async function renderMarkersRoute(req, res, next) {
+  async function renderMarkersRoute(req, res) {
     const { id } = req.params;
     const item = RenderManager.instance.get(id);
 
@@ -571,7 +483,7 @@ module.exports = function (options) {
       bearing = +(req.params.bearing || "0"),
       pitch = +(req.params.pitch || "0"),
       scale = getScale(req.params.scale),
-      format = formats[req.params.format];
+      format = RenderManager.formats[req.params.format];
 
     const markerList = markers.parse(req.params.overlay);
 
@@ -615,7 +527,7 @@ module.exports = function (options) {
       fetchedMarkersList.filter(Boolean)
     );
 
-    const image = await renderMapImage(item, z, x, y, 0, 0, w, h, scale);
+    let image = await renderMapImage(item, z, x, y, 0, 0, w, h, scale);
 
     image = image.composite([{ input: overlay }]);
 
@@ -624,9 +536,9 @@ module.exports = function (options) {
       image = image.composite([{ input: watermark }]);
     }
 
-    imageOutput = formatImage(image, format);
+    const imageOutput = formatImage(image, format);
 
-    const { data: buffer, info } = await imageOutput.toBuffer({ resolveWithObject: true });
+    const buffer = await imageOutput.toBuffer();
 
     if (!buffer) {
       throw new NotFoundError();
@@ -639,7 +551,7 @@ module.exports = function (options) {
     res.status(200).send(buffer);
   }
 
-  function renderStaticRoute(req, res, next) {
+  function renderStaticRoute(req, res) {
     for (let key in req.query) {
       req.query[key.toLowerCase()] = req.query[key];
     }
@@ -658,10 +570,10 @@ module.exports = function (options) {
       req.params.scale = `@${req.query.scale}`;
     }
 
-    return renderBoundsRoute(req, res, next);
+    return renderBoundsRoute(req, res);
   }
 
-  async function renderAutoRoute(req, res, next) {
+  async function renderAutoRoute(req, res) {
     const { id } = req.params;
     const item = RenderManager.instance.get(id);
 
@@ -675,7 +587,7 @@ module.exports = function (options) {
       bearing = 0,
       pitch = 0,
       scale = getScale(req.params.scale),
-      format = formats[req.params.format];
+      format = RenderManager.formats[req.params.format];
 
     const transformer = raw ? mercator.inverse.bind(mercator) : item.dataProjWGStoInternalWGS;
 
@@ -712,9 +624,9 @@ module.exports = function (options) {
       image = image.composite([{ input: watermark }]);
     }
 
-    imageOutput = formatImage(image, format);
+    const imageOutput = formatImage(image, format);
 
-    const { data: buffer, info } = await imageOutput.toBuffer({ resolveWithObject: true });
+    const buffer = await imageOutput.toBuffer();
 
     if (!buffer) {
       throw new NotFoundError();
@@ -727,7 +639,7 @@ module.exports = function (options) {
     res.status(200).send(buffer);
   }
 
-  function getStyle(req, res, next) {
+  function getStyle(req, res) {
     const item = RenderManager.instance.get(req.params.id);
 
     if (!item) {

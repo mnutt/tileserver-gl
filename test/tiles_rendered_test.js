@@ -1,4 +1,5 @@
 const fs = require("fs");
+const supertest = require("supertest");
 const makeApp = require("../src/app");
 const StyleManager = require("../src/managers/style");
 const DataManager = require("../src/managers/data");
@@ -13,7 +14,7 @@ let app;
 before(async () => {
   const styleManager = await StyleManager.init(config.options, config.styles);
   const dataManager = await DataManager.init(config.options, config.data);
-  const fontManager = await FontManager.init(config.options, styleManager.fontsList);
+  await FontManager.init(config.options, styleManager.fontsList);
 
   const extraSources = dataManager
     .validateSources(styleManager.sourcesList)

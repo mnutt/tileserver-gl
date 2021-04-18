@@ -12,7 +12,7 @@ module.exports = function makeOptions(args) {
     )
     .option("-c, --config <file>", "Configuration file [config.json]", "config.json")
     .option("-b, --bind <address>", "Bind address")
-    .option("-p, --port <port>", "Port [8080]", 8080, parseInt)
+    .option("-p, --port <port>", "Port [8080]", process.env.PORT || 8080, parseInt)
     .option("-C|--no-cors", "Disable Cross-origin resource sharing headers")
     .option(
       "-u|--public_url <url>",

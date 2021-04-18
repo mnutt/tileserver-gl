@@ -103,9 +103,7 @@ class DataManager {
       return { identifier: dataItemId, newData: false };
     } else {
       if (fromData) {
-        throw new Error(
-          `ERROR: style "${item.style}" using unknown mbtiles "${mbtiles}"! Skipping...`
-        );
+        throw new Error(`ERROR: style using unknown mbtiles "${mbtiles}"! Skipping...`);
       } else {
         let identifier = mbtiles.substr(0, mbtiles.lastIndexOf(".")) || mbtiles;
         while (this.get(identifier)) identifier += "_";

@@ -17,7 +17,7 @@ module.exports.getTileUrls = (req, domains, path, format, publicUrl, aliases) =>
     const host = req.headers.host;
     const hostParts = host.split(".");
     const relativeSubdomainsUsable =
-      hostParts.length > 1 && !/^([0-9]{1,3}\.){3}[0-9]{1,3}(\:[0-9]+)?$/.test(host);
+      hostParts.length > 1 && !/^([0-9]{1,3}\.){3}[0-9]{1,3}(:[0-9]+)?$/.test(host);
     const newDomains = [];
     for (const domain of domains) {
       if (domain.indexOf("*") !== -1) {
@@ -36,13 +36,13 @@ module.exports.getTileUrls = (req, domains, path, format, publicUrl, aliases) =>
     domains = [req.headers.host];
   }
 
-  const key = req.query.key;
+  const { key, style } = req.query;
   const queryParams = [];
-  if (req.query.key) {
-    queryParams.push(`key=${encodeURIComponent(req.query.key)}`);
+  if (key) {
+    queryParams.push(`key=${encodeURIComponent(key)}`);
   }
-  if (req.query.style) {
-    queryParams.push(`style=${encodeURIComponent(req.query.style)}`);
+  if (style) {
+    queryParams.push(`style=${encodeURIComponent(style)}`);
   }
   const query = queryParams.length > 0 ? `?${queryParams.join("&")}` : "";
 

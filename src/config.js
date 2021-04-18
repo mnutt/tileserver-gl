@@ -3,6 +3,11 @@ const request = require("request");
 const path = require("path");
 const DataManager = require("./managers/data");
 const { DataSource } = DataManager;
+const stream = require("stream");
+const util = require("util");
+const url = require("url");
+
+const pipeline = util.promisify(stream.pipeline);
 
 const defaultMbtilesUrl =
   "https://github.com/maptiler/tileserver-gl/releases/download/v1.3.0/zurich_switzerland.mbtiles";
@@ -56,7 +61,7 @@ async function downloadDefaultMbtilesFile() {
 
   await pipeline(request.get(url), stream);
 
-  return path.resolve(filename);
+  return path.resolve(defaultMbtilesFilename);
 }
 
 async function createDefaultConfig(options) {

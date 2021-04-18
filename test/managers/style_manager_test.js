@@ -1,4 +1,5 @@
 const fs = require("fs");
+const should = require("should");
 const StyleManager = require("../../src/managers/style");
 
 const testConfig = JSON.parse(fs.readFileSync(__dirname + "/../../test_data/config.json"));

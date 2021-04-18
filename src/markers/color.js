@@ -1,13 +1,9 @@
-const { loadImage, createCanvas, ImageData, Image } = require("canvas");
+const { createCanvas, ImageData } = require("canvas");
 const { memoize } = require("../memoize");
 const sharp = require("sharp");
 
 const oneDay = 24 * 60 * 60 * 1000;
 const sizes = { s: "s", m: "m", l: "l" };
-
-async function getImageData(path) {
-  return;
-}
 
 async function _templateForSize(size) {
   const path = `${__dirname}/../../images/marker-${sizes[size]}.png`;

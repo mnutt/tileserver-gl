@@ -75,25 +75,6 @@ class StyleManager {
     return style;
   }
 
-  lookupSource(url, mapping = {}, allowNewSource) {
-    if (!(url && url.startsWith("mbtiles:"))) {
-      return false;
-    }
-
-    let mbtilesFile = url.substring("mbtiles://".length);
-    const fromData = mbtilesFile.startsWith("{") && mbtilesFile.endsWith("}");
-
-    if (fromData) {
-      mbtilesFile = mbtilesFile.substr(1, mbtilesFile.length - 2);
-      const mapsTo = (item.mapping || {})[mbtilesFile];
-      if (mapsTo) {
-        mbtilesFile = mapsTo;
-      }
-    }
-
-    const existing = this.foundMbtilesData(mbtilesFile);
-  }
-
   async parse(item, id) {
     const styleFile = path.resolve(this.stylesPath, item.style);
 

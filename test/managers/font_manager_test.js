@@ -1,7 +1,5 @@
-const fs = require("fs");
+const should = require("should");
 const FontManager = require("../../src/managers/font");
-
-const config = fs.readFileSync("./test_data/config.json");
 
 const fontsPath = __dirname + "/../../test_data/fonts";
 const fontList = ["Open Sans Bold", "Open Sans Italic", "Open Sans Regular", "Open Sans Semibold"];

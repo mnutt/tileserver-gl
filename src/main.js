@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-const fs = require("fs");
+
 const enableShutdown = require("http-shutdown");
 const packageJson = require("../package");
 const path = require("path");
@@ -92,25 +92,26 @@ async function startServer(config, opts) {
   process.on("SIGHUP", () => {
     console.log("Stopping server and reloading config");
 
-    running.server.shutdown(() => {
+    server.shutdown(() => {
       for (const key in require.cache) {
         delete require.cache[key];
       }
 
-      const restarted = start(opts);
-      running.server = restarted.server;
-      running.app = restarted.app;
+      // TODO: reassign server and app
+      start();
     });
   });
 
   enableShutdown(server);
 }
 
-(async function start() {
+async function start() {
   const opts = makeOptions(args);
   console.log(`Starting ${packageJson.name} v${packageJson.version}`);
 
   const config = await loadConfig(opts);
 
   await startServer(config, opts);
-})();
+}
+
+start();

@@ -1,5 +1,3 @@
-const path = require("path");
-const fs = require("fs").promises;
 const { Router } = require("express");
 
 const TemplateManager = require("../managers/template");
@@ -11,55 +9,9 @@ const packageJson = require("../../package");
 const mercator = new (require("@mapbox/sphericalmercator"))();
 const utils = require("../utils");
 
-let serve_rendered = null;
 const isLight = packageJson.name.slice(-6) === "-light";
 
 module.exports = function (options) {
-  const templates = path.join(__dirname, "../public/templates");
-
-  async function serveTemplate(urlPath, template, dataGetter) {
-    let templateFile = `${templates}/${template}.tmpl`;
-    if (template === "index") {
-      if (options.frontPage === false) {
-        return;
-      } else if (options.frontPage && options.frontPage.constructor === String) {
-        templateFile = path.resolve(paths.root, options.frontPage);
-      }
-    }
-    startupPromises.push(
-      new Promise((resolve, reject) => {
-        fs.readFile(templateFile, (err, content) => {
-          if (err) {
-            err = new Error(`Template not found: ${err.message}`);
-            reject(err);
-            return;
-          }
-          const compiled = handlebars.compile(content.toString());
-
-          app.use(urlPath, (req, res, next) => {
-            let data = {};
-            if (dataGetter) {
-              data = dataGetter(req);
-              if (!data) {
-                return res.status(404).send("Not found");
-              }
-            }
-            data["server_version"] = `${packageJson.name} v${packageJson.version}`;
-            data["public_url"] = opts.publicUrl || "/";
-            data["is_light"] = isLight;
-            data["key_query_part"] = req.query.key
-              ? `key=${encodeURIComponent(req.query.key)}&amp;`
-              : "";
-            data["key_query"] = req.query.key ? `?key=${encodeURIComponent(req.query.key)}` : "";
-            if (template === "wmts") res.set("Content-Type", "text/xml");
-            return res.status(200).send(compiled(data));
-          });
-          resolve();
-        });
-      })
-    );
-  }
-
   function defaultData(req) {
     const { key } = req.query;
 
@@ -72,20 +24,17 @@ module.exports = function (options) {
     };
   }
 
-  function indexTemplate(req, res, next) {
+  function indexTemplate(req, res) {
     const template = TemplateManager.instance.get("index");
 
     const styles = Object.entries(StyleManager.instance.styles).map(([id, _style]) => {
       const style = Object.assign({}, _style);
 
       style.serving_data = !!StyleManager.instance.get(id);
-      let rendered;
-      if (!isLight) {
-        rendered = RenderManager.instance.get(id);
-      }
-      style.serving_rendered = !!rendered;
+      style.serving_rendered = !isLight;
 
-      if (rendered) {
+      if (!isLight) {
+        const rendered = RenderManager.instance.get(id);
         const { center } = rendered.tileJSON;
         if (center) {
           style.viewer_hash = `#${center[2]}/${center[1].toFixed(5)}/${center[0].toFixed(5)}`;
@@ -162,7 +111,7 @@ module.exports = function (options) {
     res.status(200).send(template(response));
   }
 
-  function viewerTemplate(req, res, next) {
+  function viewerTemplate(req, res) {
     const template = TemplateManager.instance.get("viewer");
 
     const { id } = req.params;
@@ -189,7 +138,7 @@ module.exports = function (options) {
     res.status(200).send(template(response));
   }
 
-  function wmtsTemplate(req, res, next) {
+  function wmtsTemplate(req, res) {
     const template = TemplateManager.instance.get("wmts");
 
     const { id } = req.params;
@@ -220,7 +169,7 @@ module.exports = function (options) {
     res.status(200).send(template(response));
   }
 
-  function dataTemplate(req, res, next) {
+  function dataTemplate(req, res) {
     const template = TemplateManager.instance.get("data");
 
     const { id } = req.params;

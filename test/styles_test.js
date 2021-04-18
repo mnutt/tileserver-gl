@@ -1,4 +1,5 @@
 const fs = require("fs");
+const supertest = require("supertest");
 const makeApp = require("../src/app");
 const StyleManager = require("../src/managers/style");
 const FontManager = require("../src/managers/font");

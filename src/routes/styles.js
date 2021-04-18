@@ -1,5 +1,4 @@
 const StyleManager = require("../managers/style");
-const DataManager = require("../managers/data");
 const utils = require("../utils");
 const { Router } = require("express");
 const fs = require("fs").promises;
@@ -22,7 +21,7 @@ const fixUrl = (req, url, publicUrl, opt_nokey) => {
 };
 
 module.exports = function (options) {
-  function getStyleRoute(req, res, next) {
+  function getStyleRoute(req, res) {
     const { id } = req.params;
 
     const item = StyleManager.instance.get(id);
@@ -57,7 +56,7 @@ module.exports = function (options) {
     return res.send(styleJSON);
   }
 
-  async function getStyleSpriteRoute(req, res, next) {
+  async function getStyleSpriteRoute(req, res) {
     const { scale, format, id } = req.params;
 
     const item = StyleManager.instance.get(id);

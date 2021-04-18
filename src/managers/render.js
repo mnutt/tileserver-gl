@@ -9,6 +9,9 @@ const fs = require("fs").promises;
 const path = require("path");
 const zlib = require("zlib");
 const util = require("util");
+const Color = require("color");
+const sharp = require("sharp");
+const request = require("request");
 
 const unzip = util.promisify(zlib.unzip);
 
@@ -26,6 +29,62 @@ async function requestFonts(url) {
 
   const concated = await FontManager.instance.getFontsPbf(fontstack, range);
   return { data: concated };
+}
+
+/**
+ * Cache of response data by sharp output format and color.  Entry for empty
+ * string is for unknown or unsupported formats.
+ */
+const cachedEmptyResponses = {
+  "": Buffer.alloc(0),
+};
+
+/**
+ * Create an appropriate mbgl response for http errors.
+ * @param {string} format The format (a sharp format or 'pbf').
+ * @param {string} color The background color (or empty string for transparent).
+ * @param {Function} callback The mbgl callback.
+ */
+async function createEmptyResponse(format, color) {
+  if (!format || format === "pbf") {
+    return { data: cachedEmptyResponses[""] };
+  }
+
+  if (format === "jpg") {
+    format = "jpeg";
+  }
+
+  if (!color) {
+    color = "rgba(255,255,255,0)";
+  }
+
+  const cacheKey = `${format},${color}`;
+  const data = cachedEmptyResponses[cacheKey];
+  if (data) {
+    return { data: data };
+  }
+
+  // create an "empty" response image
+  color = new Color(color);
+  const array = color.array();
+  const channels = array.length === 4 && format !== "jpeg" ? 4 : 3;
+
+  const input = {
+    raw: {
+      width: 1,
+      height: 1,
+      channels: channels,
+    },
+  };
+
+  try {
+    const buffer = await sharp(Buffer.from(array), input).toFormat(format).toBuffer();
+
+    cachedEmptyResponses[cacheKey] = buffer;
+    return { data: buffer };
+  } catch (_e) {
+    return { data: null };
+  }
 }
 
 async function requestMbtiles(url, decoratorFunc) {
@@ -76,6 +135,10 @@ async function requestMbtiles(url, decoratorFunc) {
 }
 
 async function requestUrl(url) {
+  const parts = new URL(url);
+  const extension = path.extname(parts.pathname).toLowerCase();
+  const format = RenderManager.formats[extension] || "";
+
   try {
     const { res, body } = await new Promise((resolve, reject) => {
       request(
@@ -94,10 +157,6 @@ async function requestUrl(url) {
       );
     });
 
-    const parts = new URL(url);
-    const extension = path.extname(parts.pathname).toLowerCase();
-    const format = extensionToFormat[extension] || "";
-
     const response = {};
 
     if (res.headers.modified) {
@@ -115,7 +174,7 @@ async function requestUrl(url) {
     response.data = body;
     return response;
   } catch (err) {
-    return createEmptyResponse(format, "", callback);
+    return createEmptyResponse(format, "");
   }
 }
 
@@ -124,6 +183,15 @@ class RenderManager {
     this.options = options;
     this.repo = {};
     this.maxScaleFactor = Math.min(Math.floor(options.maxScaleFactor || 3), 9);
+  }
+
+  static get formats() {
+    return {
+      png: "png",
+      webp: "webp",
+      jpg: "jpeg",
+      jpeg: "jpeg",
+    };
   }
 
   static async init(options, styles) {
@@ -289,7 +357,9 @@ class RenderManager {
       type: "baselayer",
     };
 
-    const attributionOverride = item.tilejson && item.tilejson.attribution;
+    // TODO: attributionOverride
+    // const attributionOverride = item.tilejson && item.tilejson.attribution;
+
     Object.assign(tileJSON, item.tilejson || {});
     tileJSON.tiles = item.domains || this.options.domains;
     utils.fixTileJSONCenter(tileJSON);
