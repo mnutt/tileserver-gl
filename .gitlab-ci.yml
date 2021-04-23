@@ -9,17 +9,15 @@ cache:
 
 tests:
   stage: test
-  image: 817035293158.dkr.ecr.us-east-1.amazonaws.com/node:10.17-buster
+  image: 817035293158.dkr.ecr.us-east-1.amazonaws.com/node:14
   script:
-    - npm i -g yarn
     - yarn
     - yarn test
 
 s3push:
   stage: upload
-  image: 817035293158.dkr.ecr.us-east-1.amazonaws.com/python:3.7
+  image: 817035293158.dkr.ecr.us-east-1.amazonaws.com/movableink/awscli:latest
   script:
-    - pip install --upgrade awscli
     - rm -Rf config
     - rm -Rf /tmp/dist
     - mkdir -p /tmp/dist/tarballs/tileserver
