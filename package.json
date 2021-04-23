@@ -10,7 +10,7 @@
   },
   "license": "BSD-2-Clause",
   "engines": {
-    "node": ">=10.17 <15"
+    "node": ">=10.17 <11"
   },
   "mocha": {
     "exit": true,

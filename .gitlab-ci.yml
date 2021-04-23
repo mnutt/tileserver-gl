@@ -9,7 +9,7 @@ cache:
 
 tests:
   stage: test
-  image: 817035293158.dkr.ecr.us-east-1.amazonaws.com/node:14
+  image: 817035293158.dkr.ecr.us-east-1.amazonaws.com/node:10.17-buster
   script:
     - yarn
     - yarn test
