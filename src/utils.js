@@ -1,7 +1,6 @@
-"use strict";
-
 const path = require("path");
 const fs = require("fs");
+const log = require("./log");
 
 const clone = require("clone");
 const glyphCompose = require("@mapbox/glyph-pbf-composite");
@@ -84,7 +83,7 @@ const getFontPbf = (allowedFonts, fontPath, name, range, fallbacks) =>
       delete fallbacks[name];
       fs.readFile(filename, (err, data) => {
         if (err) {
-          console.error(`ERROR: Font not found: ${name}`);
+          log.error(`ERROR: Font not found: ${name}`);
           if (fallbacks && Object.keys(fallbacks).length) {
             let fallbackName;
 
@@ -100,7 +99,7 @@ const getFontPbf = (allowedFonts, fontPath, name, range, fallbacks) =>
               }
             }
 
-            console.error(`ERROR: Trying to use ${fallbackName} as a fallback`);
+            log.error(`ERROR: Trying to use ${fallbackName} as a fallback`);
             delete fallbacks[fallbackName];
             getFontPbf(null, fontPath, fallbackName, range, fallbacks).then(resolve, reject);
           } else {

@@ -1,6 +1,7 @@
 const fs = require("fs").promises;
 const path = require("path");
 const glyphCompose = require("@mapbox/glyph-pbf-composite");
+const log = require("../log");
 
 function toObject(list) {
   return list.reduce((acc, item) => {
@@ -103,7 +104,7 @@ class FontManager {
       const file = await fs.readFile(filename);
       return file;
     } catch (e) {
-      console.error(`Font not found: ${name}`);
+      log.error(`Font not found: ${name}`);
 
       if (fallbacks && fallbacks.length) {
         const fallback = this.chooseFallback(name, fallbacks);

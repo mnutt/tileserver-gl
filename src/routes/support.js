@@ -1,3 +1,5 @@
+const log = require("../log");
+
 class BadRequestError extends Error {}
 class NotFoundError extends Error {}
 
@@ -11,7 +13,7 @@ exports.asyncRoute = function asyncRoute(fn) {
       } else if (error instanceof NotFoundError) {
         res.status(404).end(error.message || "Not found");
       } else {
-        console.error(error);
+        log.error(error);
         res.sendStatus(500);
       }
     }

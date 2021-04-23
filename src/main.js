@@ -6,6 +6,8 @@ const path = require("path");
 const loadConfig = require("./config");
 const chokidar = require("chokidar");
 const makeOptions = require("./options");
+const TelemetryServer = require("./telemetry");
+const log = require("./log");
 
 const StyleManager = require("./managers/style");
 const DataManager = require("./managers/data");
@@ -44,45 +46,56 @@ async function startServer(config, opts) {
     renderManager = await RenderManager.init(config.options, config.styles);
   }
 
-  const watcher = chokidar.watch(path.join(config.options.paths.styles, "*.json"), {});
-  watcher.on("all", (eventType, filename) => {
-    if (filename) {
-      const id = path.basename(filename, ".json");
-      console.log(`Style "${id}" changed, updating...`);
+  if (opts.watch_for_style_changes) {
+    const watcher = chokidar.watch(path.join(config.options.paths.styles, "*.json"), {});
+    watcher.on("all", (eventType, filename) => {
+      if (filename) {
+        const id = path.basename(filename, ".json");
+        log.notice(`Style "${id}" changed, updating...`);
 
-      styleManager.remove(id);
-      if (renderManager) {
-        renderManager.remove(id);
-      }
-
-      if (eventType == "add" || eventType == "change") {
-        let item = {
-          style: filename,
-        };
-
-        styleManager.add(item, id);
-
+        styleManager.remove(id);
         if (renderManager) {
-          renderManager.add(item, id);
+          renderManager.remove(id);
+        }
+
+        if (eventType == "add" || eventType == "change") {
+          let item = {
+            style: filename,
+          };
+
+          styleManager.add(item, id);
+
+          if (renderManager) {
+            renderManager.add(item, id);
+          }
         }
       }
-    }
-  });
+    });
+  }
 
   await TemplateManager.init();
 
   const app = require("./app")(config.options);
 
-  const server = app.listen(
-    process.env.PORT || opts.port,
-    process.env.BIND || opts.bind,
-    function () {
+  function logServerStart(type) {
+    return function () {
+      let port = this.address().port;
       let address = this.address().address;
       if (address.indexOf("::") === 0) {
         address = `[${address}]`; // literal IPv6 address
       }
-      console.log(`Listening at http://${address}:${this.address().port}/`);
-    }
+      log.info({
+        message: `${type.charAt(0).toUpperCase()}${type.slice(1)} is listening`,
+        address,
+        port,
+      });
+    };
+  }
+
+  const server = app.listen(
+    process.env.PORT || opts.port,
+    process.env.BIND || opts.bind,
+    logServerStart("tileserver")
   );
 
   process.on("SIGINT", () => {
@@ -90,7 +103,7 @@ async function startServer(config, opts) {
   });
 
   process.on("SIGHUP", () => {
-    console.log("Stopping server and reloading config");
+    log.notice("Stopping server and reloading config");
 
     server.shutdown(() => {
       for (const key in require.cache) {
@@ -103,11 +116,17 @@ async function startServer(config, opts) {
   });
 
   enableShutdown(server);
+
+  const telemetryPort = process.env.TELEMETRY_PORT || opts.telemetry_port;
+  if (telemetryPort) {
+    const telemetryServer = TelemetryServer.makeServer();
+    telemetryServer.listen(telemetryPort, logServerStart("prometheus"));
+  }
 }
 
 async function start() {
   const opts = makeOptions(args);
-  console.log(`Starting ${packageJson.name} v${packageJson.version}`);
+  log.notice(`Starting ${packageJson.name} v${packageJson.version}`);
 
   const config = await loadConfig(opts);
 

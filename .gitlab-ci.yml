@@ -1,0 +1,27 @@
+stages:
+  - test
+  - upload
+
+cache:
+  untracked: true
+  paths:
+    - node_modules/
+
+tests:
+  stage: test
+  image: 817035293158.dkr.ecr.us-east-1.amazonaws.com/node:10.17-buster
+  script:
+    - npm i -g yarn
+    - yarn
+    - yarn test
+
+s3push:
+  stage: upload
+  image: 817035293158.dkr.ecr.us-east-1.amazonaws.com/python:3.7
+  script:
+    - pip install --upgrade awscli
+    - rm -Rf config
+    - rm -Rf /tmp/dist
+    - mkdir -p /tmp/dist/tarballs/tileserver
+    - tar -czf /tmp/dist/tarballs/tileserver/tileserver-${CI_COMMIT_SHA}.tar.gz .
+    - aws s3 sync /tmp/dist s3://movableink-apps --acl private

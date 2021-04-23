@@ -6,6 +6,7 @@ const { DataSource } = DataManager;
 const stream = require("stream");
 const util = require("util");
 const url = require("url");
+const log = require("./log");
 
 const pipeline = util.promisify(stream.pipeline);
 
@@ -18,16 +19,16 @@ module.exports = async function loadConfig(options) {
     const configData = await fs.stat(path.resolve(options.config));
     return JSON.parse(configData);
   } catch (e) {
-    console.log(`[INFO] Automatically creating config file`);
-    console.log(`[INFO] Only a basic preview style will be used.`);
-    console.log(`[INFO] See documentation to learn how to create config.json file.`);
+    log.notice(`[INFO] Automatically creating config file`);
+    log.notice(`[INFO] Only a basic preview style will be used.`);
+    log.notice(`[INFO] See documentation to learn how to create config.json file.`);
 
     const config = await createDefaultConfig(options);
 
     if (options.verbose) {
-      console.log("Generated config:", JSON.stringify(config, undefined, 2));
+      log.notice(`Generated config: ${JSON.stringify(config)}`);
     } else {
-      console.log("Run with --verbose to see the generated config file here.");
+      log.notice("Run with --verbose to see the generated config file here.");
     }
 
     return config;
@@ -54,10 +55,8 @@ async function findMbtilesFile() {
 async function downloadDefaultMbtilesFile() {
   const stream = fs.createWriteStream(defaultMbtilesFilename);
 
-  console.log(`No MBTiles found`);
-  console.log(
-    `[DEMO] Downloading sample data (${defaultMbtilesFilename}) from ${defaultMbtilesUrl}`
-  );
+  log.warn(`No MBTiles found`);
+  log.warn(`[DEMO] Downloading sample data (${defaultMbtilesFilename}) from ${defaultMbtilesUrl}`);
 
   await pipeline(request.get(url), stream);
 
@@ -71,8 +70,8 @@ async function createDefaultConfig(options) {
   try {
     await fs.stat(mbtilesFile);
   } catch (e) {
-    console.log("ERROR: Unable to open MBTiles.");
-    console.log(`       Make sure ${path.basename(mbtilesFile)} is valid MBTiles.`);
+    log.error("ERROR: Unable to open MBTiles.");
+    log.error(`       Make sure ${path.basename(mbtilesFile)} is valid MBTiles.`);
     process.exit(1);
   }
 
@@ -82,8 +81,8 @@ async function createDefaultConfig(options) {
   try {
     source = new DataSource(await dataManager.loadMbTiles(mbtilesFile));
   } catch (e) {
-    console.log("ERROR: Metadata missing in the MBTiles.");
-    console.log(`       Make sure ${path.basename(mbtilesFile)} is valid MBTiles.`);
+    log.error("ERROR: Metadata missing in the MBTiles.");
+    log.error(`       Make sure ${path.basename(mbtilesFile)} is valid MBTiles.`);
     process.exit(1);
   }
 
@@ -128,7 +127,7 @@ async function createDefaultConfig(options) {
       }
     }
   } else {
-    console.log(`WARN: MBTiles not in "openmaptiles" format. Serving raw data only...`);
+    log.warn(`WARN: MBTiles not in "openmaptiles" format. Serving raw data only...`);
     const dataName = (info.id || "mbtiles")
       .replace(/\//g, "_")
       .replace(/:/g, "_")

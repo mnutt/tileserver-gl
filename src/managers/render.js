@@ -12,6 +12,8 @@ const util = require("util");
 const Color = require("color");
 const sharp = require("sharp");
 const request = require("request");
+const metrics = require("../metrics");
+const log = require("../log");
 
 const unzip = util.promisify(zlib.unzip);
 
@@ -109,13 +111,8 @@ async function requestMbtiles(url, decoratorFunc) {
       try {
         response.data = await unzip(data);
       } catch (err) {
-        console.log(
-          "Skipping incorrect header for tile mbtiles://%s/%s/%s/%s.pbf",
-          sourceId,
-          z,
-          x,
-          y,
-          err
+        log.warn(
+          `Skipping incorrect header for tile mbtiles://${sourceId}/${z}/${x}/${y}.pbf: ${err.message}`
         );
       }
 
@@ -129,7 +126,7 @@ async function requestMbtiles(url, decoratorFunc) {
     return response;
   } catch (err) {
     const sourceInfo = StyleManager.instance.get(sourceId).styleJSON;
-    console.log("MBTiles error, serving empty", err);
+    log.error(`MBTiles error, serving empty: ${err.message}`);
     return createEmptyResponse(sourceInfo.format, sourceInfo.color);
   }
 }
@@ -202,7 +199,7 @@ class RenderManager {
         .map((id) => {
           const item = styles[id];
           if (!item.style || item.style.length == 0) {
-            console.log(`Missing "style" property for ${id}`);
+            log.error(`Missing "style" property for ${id}`);
             return;
           }
           return manager.add(item, id);
@@ -317,7 +314,9 @@ class RenderManager {
                 .then((data) => callback(null, data))
                 .catch((err) => callback(err, null));
             } catch (e) {
-              console.error(e);
+              metrics.tileErrorCounter.inc();
+
+              log.error(e.message);
             }
           },
         });

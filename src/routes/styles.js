@@ -77,7 +77,6 @@ module.exports = function (options) {
 
       return res.send(data);
     } catch (err) {
-      console.log("Sprite load error:", filename);
       return res.sendStatus(404);
     }
   }

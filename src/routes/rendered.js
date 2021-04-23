@@ -2,6 +2,8 @@ const RenderManager = require("../managers/render");
 
 const { Router } = require("express");
 const util = require("util");
+const log = require("../log");
+const metrics = require("../metrics");
 
 const sharp = require("sharp");
 const { createCanvas } = require("canvas");
@@ -509,11 +511,16 @@ module.exports = function (options) {
       z = +z;
     }
 
+    const markerFetchStart = new Date();
     const fetchedMarkersList = await Promise.all(
       markerList.map((m) => {
-        return markers.fetch(m).catch((e) => console.error(e));
+        return markers.fetch(m).catch((e) => {
+          metrics.markerErrorCounter.inc();
+          log.error(e);
+        });
       })
     );
+    metrics.markerRequestDurationMillisecondsSummary.observe(new Date() - markerFetchStart);
 
     const overlay = renderMarkersOverlay(
       z,
