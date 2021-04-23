@@ -11,8 +11,8 @@ tests:
   stage: test
   image: 817035293158.dkr.ecr.us-east-1.amazonaws.com/node:10.17-buster
   script:
-    - sudo apt-get install -qq libcairo2-dev libjpeg8-dev libpango1.0-dev libgif-dev build-essential g++
-    - sudo apt-get install -qq xvfb libgles2-mesa-dev libgbm-dev libxxf86vm-dev
+    - apt-get install -qq libcairo2-dev libjpeg8-dev libpango1.0-dev libgif-dev build-essential g++
+    - apt-get install -qq xvfb libgles2-mesa-dev libgbm-dev libxxf86vm-dev
     - wget -O test_data.zip https://github.com/maptiler/tileserver-gl/releases/download/v1.3.0/test_data.zip
     - unzip -q test_data.zip -d test_data
     - yarn
