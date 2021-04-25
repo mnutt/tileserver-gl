@@ -143,7 +143,7 @@ class DataManager {
       format: "pbf",
     };
 
-    Object.assign(tileJSON, info, { tilejson: "2.0.0" });
+    Object.assign(tileJSON, info, { tilejson: "2.0.0", id });
 
     delete tileJSON["filesize"];
     delete tileJSON["mtime"];
