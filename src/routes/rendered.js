@@ -685,7 +685,7 @@ module.exports = function (options) {
     asyncRoute(renderAutoRoute)
   );
   routes.get(
-    `/:id/static/:overlay(pin-[^/]+)/${autoPattern}/:width(\\d+)x:height(\\d+):scale(${scalePattern})?.:format([\\w]+)`,
+    `/:id/static/:overlay(\\w{3}-[^/]+)/${autoPattern}/:width(\\d+)x:height(\\d+):scale(${scalePattern})?.:format([\\w]+)`,
     asyncRoute(renderMarkersRoute)
   );
   routes.get("/:id/static", asyncRoute(renderStaticRoute));
