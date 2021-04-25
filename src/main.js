@@ -38,6 +38,14 @@ async function startServer(config, opts) {
     dataManager.add(id, item);
   }
 
+  log.notice({
+    config: {
+      sources: Object.keys(dataManager.data),
+      aliases: Object.keys(dataManager.aliases),
+      styles: Object.keys(styleManager.styles)
+    }
+  });
+
   fontManager.allowFonts(styleManager.fontsList);
 
   let renderManager;
