@@ -145,7 +145,7 @@ module.exports = function (options) {
     width,
     height,
     scale,
-    layerList
+    layerList = []
   ) {
     if (Math.abs(lon) > 180 || Math.abs(lat) > 85.06 || lon !== lon || lat !== lat) {
       throw new BadRequestError(`Invalid center: ${lon},${lat}`);
@@ -672,7 +672,7 @@ module.exports = function (options) {
     asyncRoute(renderAutoRoute)
   );
   routes.get(
-    `/:id/static/:overlay(\\w{3}-[^/]+)/:z(\\d+|auto)(@:bearing(\\d+)(,:pitch(\\d+))?)?/:width(\\d+)x:height(\\d+):scale(${scalePattern})?.:format([\\w]+)`,
+    `/:id/static/:overlay(,?\\w{3}-[^/]+)/:z(\\d+|auto)(@:bearing(\\d+)(,:pitch(\\d+))?)?/:width(\\d+)x:height(\\d+):scale(${scalePattern})?.:format([\\w]+)`,
     asyncRoute(renderMarkersRoute)
   );
   routes.get("/:id/static", asyncRoute(renderStaticRoute));

@@ -17,12 +17,12 @@ const defaultMbtilesFilename = "zurich_switzerland.mbtiles";
 module.exports = async function loadConfig(options) {
   try {
     const configPath = path.resolve(options.config);
-    log.notice(`Reading config: ${configPath}`);
+    log.notice(`Using config: ${configPath}`);
 
     const configData = await fs.readFile(configPath);
     return JSON.parse(configData);
   } catch (e) {
-    log.notice(`Config reading error: ${e.message}`);
+    log.error(`Config reading error: ${e.message}`);
     log.notice(`[INFO] Automatically creating config file`);
     log.notice(`[INFO] Only a basic preview style will be used.`);
     log.notice(`[INFO] See documentation to learn how to create config.json file.`);

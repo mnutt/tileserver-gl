@@ -92,7 +92,11 @@ async function createEmptyResponse(format, color) {
 async function requestMbtiles(url, decoratorFunc) {
   const parts = url.split("/");
   let sourceId = parts[2];
-  const { source } = DataManager.instance.get(sourceId);
+  const data = DataManager.instance.get(sourceId);
+  if (!data) {
+    throw new Error(`Missing data: ${sourceId}`);
+  }
+  const { source } = data;
 
   const z = parts[3] | 0,
     x = parts[4] | 0,

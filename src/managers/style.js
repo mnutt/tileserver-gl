@@ -1,6 +1,7 @@
 const fs = require("fs").promises;
 const path = require("path");
 const { validate } = require("@mapbox/mapbox-gl-style-spec");
+const log = require("../log");
 
 const httpTester = /^(http(s)?:)?\/\//;
 
@@ -82,7 +83,7 @@ class StyleManager {
     try {
       styleFileData = await fs.readFile(styleFile);
     } catch (e) {
-      console.log("Error reading style file");
+      log.error(`Error reading style file: ${e.message}`);
       return false;
     }
 

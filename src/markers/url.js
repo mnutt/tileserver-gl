@@ -3,6 +3,10 @@ const fetch = require("node-fetch");
 const TIMEOUT = 3000;
 
 exports.get = function (markerUrl) {
+  if (!markerUrl.match(/^\w+:/)) {
+    markerUrl = `http://${markerUrl}`;
+  }
+
   const timer = new Promise((_, reject) => {
     setTimeout(() => reject(new Error("Timeout")), TIMEOUT);
   });
