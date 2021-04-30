@@ -42,8 +42,8 @@ async function startServer(config, opts) {
     config: {
       sources: Object.keys(dataManager.data),
       aliases: Object.keys(dataManager.aliases),
-      styles: Object.keys(styleManager.styles)
-    }
+      styles: Object.keys(styleManager.styles),
+    },
   });
 
   fontManager.allowFonts(styleManager.fontsList);

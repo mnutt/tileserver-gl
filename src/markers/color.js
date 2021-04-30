@@ -1,4 +1,3 @@
-const { createCanvas, ImageData } = require("canvas");
 const { memoize } = require("../memoize");
 const sharp = require("sharp");
 
@@ -54,12 +53,7 @@ exports.create = async function create(size, hex) {
     argb[i] = (alpha << 24) | (b << 16) | (g << 8) | r;
   }
 
-  const image = createCanvas(width, height);
-  const ctx = image.getContext("2d");
-  const imageData = new ImageData(new Uint8ClampedArray(buffer), width, height);
-  ctx.putImageData(imageData, 0, 0);
-
-  return image;
+  return { data: Buffer.from(buffer), info: { width, height } };
 };
 
 exports.createCached = memoize(exports.create);

@@ -112,39 +112,6 @@ function renderOverlay(z, x, y, bearing, pitch, w, h, scale, path, query) {
   return canvas.toBuffer();
 }
 
-function renderMarkersOverlay(z, x, y, bearing, pitch, w, h, scale, markerList) {
-  if (!markerList || !markerList.length) {
-    return null;
-  }
-
-  const center = georeferenceMapCenter(x, y, z, h);
-
-  const canvas = createCanvas(scale * w, scale * h);
-  const ctx = canvas.getContext("2d");
-  ctx.scale(scale, scale);
-  if (bearing) {
-    ctx.translate(w / 2, h / 2);
-    ctx.rotate((-bearing / 180) * Math.PI);
-    ctx.translate(-center[0], -center[1]);
-  } else {
-    ctx.translate(-center[0] + w / 2, -center[1] + h / 2);
-  }
-
-  for (let marker of markerList) {
-    const location = precisePx([marker.x, marker.y], z);
-
-    ctx.drawImage(
-      marker.image,
-      location[0] - marker.image.width / 2,
-      location[1] - marker.image.height / 2,
-      marker.image.width,
-      marker.image.height
-    );
-  }
-
-  return canvas.toBuffer();
-}
-
 function calcZForBBox(bbox, w, h, query) {
   let z = 25;
 
@@ -168,9 +135,20 @@ function calcZForBBox(bbox, w, h, query) {
 
 module.exports = function (options) {
   // Returns a sharp image
-  async function renderMapImage(item, z, lon, lat, bearing, pitch, width, height, scale) {
+  async function renderMapImage(
+    item,
+    z,
+    lon,
+    lat,
+    bearing,
+    pitch,
+    width,
+    height,
+    scale,
+    layerList
+  ) {
     if (Math.abs(lon) > 180 || Math.abs(lat) > 85.06 || lon !== lon || lat !== lat) {
-      throw new BadRequestError("Invalid center");
+      throw new BadRequestError(`Invalid center: ${lon},${lat}`);
     }
 
     if (
@@ -181,12 +159,6 @@ module.exports = function (options) {
     ) {
       throw new BadRequestError("Invalid size");
     }
-
-    const pool = item.renderers[scale];
-
-    const renderer = await new Promise((resolve, reject) => {
-      pool.acquire((err, renderer) => (err ? reject(err) : resolve(renderer)));
-    });
 
     const mbglZ = Math.max(0, z - 1);
     const params = {
@@ -209,12 +181,34 @@ module.exports = function (options) {
       params.height += tileMargin * 2;
     }
 
-    const data = await new Promise((resolve, reject) => {
-      renderer.render(params, (err, data) => {
-        err ? reject(err) : resolve(data);
-      });
+    const pool = item.renderers[scale];
+
+    const renderer = await new Promise((resolve, reject) => {
+      pool.acquire((err, renderer) => (err ? reject(err) : resolve(renderer)));
     });
-    pool.release(renderer);
+
+    let data;
+    try {
+      for (let marker of layerList) {
+        renderer.addImage(marker.url, marker.image.data, marker.image.options);
+        renderer.addSource(marker.url, marker.source);
+        renderer.addLayer(marker.layer);
+      }
+
+      data = await new Promise((resolve, reject) => {
+        renderer.render(params, (err, data) => {
+          err ? reject(err) : resolve(data);
+        });
+      });
+
+      for (let marker of layerList) {
+        renderer.removeLayer(marker.url);
+        renderer.removeSource(marker.url);
+        renderer.removeImage(marker.url);
+      }
+    } finally {
+      pool.release(renderer);
+    }
 
     // Fix semi-transparent outlines on raw, premultiplied input
     // https://github.com/maptiler/tileserver-gl/issues/350#issuecomment-477857040
@@ -503,40 +497,33 @@ module.exports = function (options) {
 
     if (z === "auto") {
       z = calcZForBBox(bbox, w, h, req.query);
-      x = center[0];
-      y = center[1];
 
-      z = Math.min(z, 17);
+      z = Math.floor(Math.min(z, 15));
     } else {
       z = +z;
     }
+
+    x = center[0];
+    y = center[1];
 
     const markerFetchStart = new Date();
     const fetchedMarkersList = await Promise.all(
       markerList.map((m) => {
         return markers.fetch(m).catch((e) => {
           metrics.markerErrorCounter.inc();
-          log.error(e);
+          log.error(e.message);
         });
       })
     );
     metrics.markerRequestDurationMillisecondsSummary.observe(new Date() - markerFetchStart);
 
-    const overlay = renderMarkersOverlay(
-      z,
-      x,
-      y,
-      bearing,
-      pitch,
-      w,
-      h,
-      scale,
-      fetchedMarkersList.filter(Boolean)
-    );
+    const layerList = markers.makeLayerList(fetchedMarkersList.filter(Boolean));
 
-    let image = await renderMapImage(item, z, x, y, 0, 0, w, h, scale);
+    if (!layerList.length) {
+      throw new Error("No markers to render, not rendering");
+    }
 
-    image = image.composite([{ input: overlay }]);
+    let image = await renderMapImage(item, z, x, y, bearing, pitch, w, h, scale, layerList);
 
     if (item.watermark) {
       const watermark = renderWatermarkOverlay(item.watermark, w, h, scale);
@@ -685,7 +672,7 @@ module.exports = function (options) {
     asyncRoute(renderAutoRoute)
   );
   routes.get(
-    `/:id/static/:overlay(\\w{3}-[^/]+)/${autoPattern}/:width(\\d+)x:height(\\d+):scale(${scalePattern})?.:format([\\w]+)`,
+    `/:id/static/:overlay(\\w{3}-[^/]+)/:z(\\d+|auto)(@:bearing(\\d+)(,:pitch(\\d+))?)?/:width(\\d+)x:height(\\d+):scale(${scalePattern})?.:format([\\w]+)`,
     asyncRoute(renderMarkersRoute)
   );
   routes.get("/:id/static", asyncRoute(renderStaticRoute));
