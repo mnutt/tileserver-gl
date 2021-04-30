@@ -115,11 +115,11 @@ class StyleManager {
     let spritePath;
 
     if (styleJSON.sprite && !httpTester.test(styleJSON.sprite)) {
-      spritePath = path.join(
+      spritePath = path.resolve(
         this.spritesPath,
         styleJSON.sprite
           .replace("{style}", path.basename(styleFile, ".json"))
-          .replace("{styleJsonFolder}", path.relative(this.spritesPath, path.dirname(styleFile)))
+          .replace("{styleJsonFolder}", path.dirname(styleFile))
       );
       styleJSON.sprite = `local://styles/${id}/sprite`;
     }
