@@ -17,11 +17,13 @@ RUN export DEBIAN_FRONTEND=noninteractive \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/*
 
-COPY . /usr/src/app
+RUN mkdir /usr/src/app
+COPY ./package.json /usr/src/app
+COPY ./yarn.lock /usr/src/app
 
 ENV NODE_ENV="production"
 
-RUN cd /usr/src/app && npm install --production
+RUN cd /usr/src/app && yarn install --production
 
 
 FROM node:10-buster-slim AS final
@@ -37,7 +39,11 @@ RUN export DEBIAN_FRONTEND=noninteractive \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/*
 
-COPY --from=builder /usr/src/app /app
+COPY . /app
+COPY --from=builder /usr/src/app/node_modules /app/node_modules
+
+ENV PORT=8080
+ENV BIND=0.0.0.0
 
 ENV NODE_ENV="production"
 ENV CHOKIDAR_USEPOLLING=1
@@ -46,10 +52,10 @@ ENV CHOKIDAR_INTERVAL=500
 VOLUME /data
 WORKDIR /data
 
-EXPOSE 80
+RUN chown node:node /data
+
+EXPOSE 8080
 
 USER node:node
 
 ENTRYPOINT ["/app/docker-entrypoint.sh"]
-
-CMD ["-p", "80"]

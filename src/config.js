@@ -1,5 +1,5 @@
 const fs = require("fs").promises;
-const request = require("request");
+const fetch = require("node-fetch");
 const path = require("path");
 const DataManager = require("./managers/data");
 const { DataSource } = DataManager;
@@ -57,12 +57,15 @@ async function findMbtilesFile() {
 }
 
 async function downloadDefaultMbtilesFile() {
-  const stream = fs.createWriteStream(defaultMbtilesFilename);
+  const stream = require("fs").createWriteStream(defaultMbtilesFilename);
 
   log.warn(`No MBTiles found`);
   log.warn(`[DEMO] Downloading sample data (${defaultMbtilesFilename}) from ${defaultMbtilesUrl}`);
 
-  await pipeline(request.get(url), stream);
+  const response = await fetch(defaultMbtilesUrl);
+  if (!response.ok) throw new Error(`unexpected response ${response.statusText}`);
+
+  await pipeline(response.body, stream);
 
   return path.resolve(defaultMbtilesFilename);
 }
