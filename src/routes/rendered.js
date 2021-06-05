@@ -14,23 +14,7 @@ const { BadRequestError, NotFoundError, asyncRoute } = require("./support");
 
 const getScale = (scale) => (scale || "@1x").slice(1, 2) | 0;
 
-const floatPattern = "[+-]?(?:\\d+|\\d+.?\\d+)";
-const centerPattern = util.format(
-  ":x(%s),:y(%s),:z(%s)(@:bearing(%s)(,:pitch(%s))?)?",
-  floatPattern,
-  floatPattern,
-  floatPattern,
-  floatPattern,
-  floatPattern
-);
-const autoPattern = "auto";
-const boundsPattern = util.format(
-  ":minx(%s),:miny(%s),:maxx(%s),:maxy(%s)",
-  floatPattern,
-  floatPattern,
-  floatPattern,
-  floatPattern
-);
+const rawTransformer = mercator.inverse.bind(mercator);
 
 const extractPathFromQuery = (query, transformer) => {
   const pathParts = (query.path || "").split("|");
@@ -52,6 +36,34 @@ const extractPathFromQuery = (query, transformer) => {
   }
   return path;
 };
+
+function parseDimensions(params) {
+  const w = params.width | 0;
+  const h = params.height | 0;
+  const scale = getScale(params.scale);
+  const format = RenderManager.formats[params.format];
+
+  return { w, h, scale, format };
+}
+
+function parseCoordinates(params) {
+  const z = +params.z;
+  const x = +params.x;
+  const y = +params.y;
+
+  const bearing = +(params.bearing || "0");
+  const pitch = +(params.pitch || "0");
+
+  return { z, x, y, bearing, pitch };
+}
+
+function parseXyz(params) {
+  const z = params.z | 0;
+  const x = params.x | 0;
+  const y = params.y | 0;
+
+  return { x, y, z };
+}
 
 const precisePx = (ll, zoom) => {
   const px = mercator.px(ll, 20);
@@ -107,6 +119,39 @@ function renderOverlay(z, x, y, bearing, pitch, w, h, scale, path, query) {
   ctx.fill();
   if (lineWidth > 0) {
     ctx.stroke();
+  }
+
+  return canvas.toBuffer();
+}
+
+function renderMarkersOverlay(z, x, y, bearing, pitch, w, h, scale, markerList) {
+  if (!markerList || !markerList.length) {
+    return null;
+  }
+
+  const center = georeferenceMapCenter(x, y, z, h);
+
+  const canvas = createCanvas(scale * w, scale * h);
+  const ctx = canvas.getContext("2d");
+  ctx.scale(scale, scale);
+  if (bearing) {
+    ctx.translate(w / 2, h / 2);
+    ctx.rotate((-bearing / 180) * Math.PI);
+    ctx.translate(-center[0], -center[1]);
+  } else {
+    ctx.translate(-center[0] + w / 2, -center[1] + h / 2);
+  }
+
+  for (let marker of markerList) {
+    const location = precisePx([marker.x, marker.y], z);
+
+    ctx.drawImage(
+      marker.image,
+      location[0] - marker.image.width / 2,
+      location[1] - marker.image.height / 2,
+      marker.image.width,
+      marker.image.height
+    );
   }
 
   return canvas.toBuffer();
@@ -210,22 +255,6 @@ module.exports = function (options) {
       pool.release(renderer);
     }
 
-    // Fix semi-transparent outlines on raw, premultiplied input
-    // https://github.com/maptiler/tileserver-gl/issues/350#issuecomment-477857040
-    for (var i = 0; i < data.length; i += 4) {
-      var alpha = data[i + 3];
-      var norm = alpha / 255;
-      if (alpha === 0) {
-        data[i] = 0;
-        data[i + 1] = 0;
-        data[i + 2] = 0;
-      } else {
-        data[i] = data[i] / norm;
-        data[i + 1] = data[i + 1] / norm;
-        data[i + 2] = data[i + 2] / norm;
-      }
-    }
-
     const image = sharp(data, {
       raw: {
         width: params.width * scale,
@@ -279,26 +308,28 @@ module.exports = function (options) {
     }
   }
 
-  async function renderRoute(req, res) {
-    const item = RenderManager.instance.get(req.params.id);
+  async function renderTilesRoute(request, response) {
+    const { params } = request;
+    const item = RenderManager.instance.get(params.id);
 
     if (!item) {
       throw new NotFoundError();
     }
 
-    const modifiedSince = req.get("if-modified-since"),
-      cc = req.get("cache-control");
+    const modifiedSince = request.headers["if-modified-since"];
+    const cc = request.headers["cache-control"];
+
     if (modifiedSince && (!cc || cc.indexOf("no-cache") === -1)) {
       if (new Date(item.lastModified) <= new Date(modifiedSince)) {
-        return res.sendStatus(304);
+        response.writeHead(304, {});
+        response.end();
+        return;
       }
     }
 
-    const z = req.params.z | 0,
-      x = req.params.x | 0,
-      y = req.params.y | 0,
-      scale = getScale(req.params.scale),
-      format = RenderManager.formats[req.params.format];
+    const { z, x, y } = parseXyz(params);
+    const { scale, format } = parseDimensions(params);
+
     if (z < 0 || x < 0 || y < 0 || z > 22 || x >= Math.pow(2, z) || y >= Math.pow(2, z)) {
       throw new NotFoundError("Out of bounds");
     }
@@ -333,55 +364,148 @@ module.exports = function (options) {
       throw new NotFoundError();
     }
 
-    res.set({
+    response.writeHead(200, {
       "Last-Modified": item.lastModified,
       "Content-Type": `image/${format}`,
     });
-    res.status(200).send(buffer);
+    response.end(buffer);
   }
 
-  async function renderCenterRoute(req, res) {
-    const item = RenderManager.instance.get(req.params.id);
+  async function renderStaticInputRoute(type, request, response) {
+    const { params } = request;
+    const item = RenderManager.instance.get(params.id);
 
     if (!item) {
-      return res.sendStatus(404);
+      throw new NotFoundError();
     }
 
-    const raw = req.params.raw;
-    let z = +req.params.z,
-      x = +req.params.x,
-      y = +req.params.y,
-      bearing = +(req.params.bearing || "0"),
-      pitch = +(req.params.pitch || "0"),
-      w = req.params.width | 0,
-      h = req.params.height | 0,
-      scale = getScale(req.params.scale),
-      format = RenderManager.formats[req.params.format];
+    const { raw } = params;
+    const transformer = raw ? rawTransformer : item.dataProjWGStoInternalWGS;
 
-    if (z < 0) {
-      throw new NotFoundError("Invalid zoom");
+    const path = extractPathFromQuery(request.query, transformer);
+
+    const { w, h, scale, format } = parseDimensions(params);
+    let x, y, z, bearing, pitch;
+
+    const overlays = [];
+
+    if (type === "center") {
+      ({ x, y, z, bearing, pitch } = parseCoordinates(params));
+
+      if (z < 0) {
+        throw new NotFoundError("Invalid zoom");
+      }
+
+      if (transformer) {
+        const ll = transformer([x, y]);
+        x = ll[0];
+        y = ll[1];
+      }
+    } else if (type === "bounds") {
+      const { minx, miny, maxx, maxy, raw } = params;
+
+      const bbox = [+minx, +miny, +maxx, +maxy];
+      let center = [(bbox[0] + bbox[2]) / 2, (bbox[1] + bbox[3]) / 2];
+
+      if (transformer) {
+        const minCorner = transformer(bbox.slice(0, 2));
+        const maxCorner = transformer(bbox.slice(2));
+        bbox[0] = minCorner[0];
+        bbox[1] = minCorner[1];
+        bbox[2] = maxCorner[0];
+        bbox[3] = maxCorner[1];
+        center = transformer(center);
+      }
+
+      z = calcZForBBox(bbox, w, h, request.query);
+      x = center[0];
+      y = center[1];
+      bearing = 0;
+      pitch = 0;
+    } else if (type === "auto") {
+      if (path.length < 2) {
+        throw new BadRequestError("Invalid path");
+      }
+
+      const bbox = [Infinity, Infinity, -Infinity, -Infinity];
+      for (const pair of path) {
+        bbox[0] = Math.min(bbox[0], pair[0]);
+        bbox[1] = Math.min(bbox[1], pair[1]);
+        bbox[2] = Math.max(bbox[2], pair[0]);
+        bbox[3] = Math.max(bbox[3], pair[1]);
+      }
+
+      const bbox_ = mercator.convert(bbox, "900913");
+      const center = mercator.inverse([(bbox_[0] + bbox_[2]) / 2, (bbox_[1] + bbox_[3]) / 2]);
+
+      z = calcZForBBox(bbox, w, h, request.query);
+      x = center[0];
+      y = center[1];
+      bearing = 0;
+      pitch = 0;
+    } else if (type === "markers") {
+      const markerList = markers.parse(params.input);
+
+      const bbox = [Infinity, Infinity, -Infinity, -Infinity];
+
+      for (const marker of markerList) {
+        bbox[0] = Math.min(bbox[0], marker.x);
+        bbox[1] = Math.min(bbox[1], marker.y);
+        bbox[2] = Math.max(bbox[2], marker.x);
+        bbox[3] = Math.max(bbox[3], marker.y);
+      }
+
+      const bbox_ = mercator.convert(bbox, "900913");
+      const center = mercator.inverse([(bbox_[0] + bbox_[2]) / 2, (bbox_[1] + bbox_[3]) / 2]);
+
+      if (transformer) {
+        const minCorner = transformer(bbox.slice(0, 2));
+        const maxCorner = transformer(bbox.slice(2));
+        bbox[0] = minCorner[0];
+        bbox[1] = minCorner[1];
+        bbox[2] = maxCorner[0];
+        bbox[3] = maxCorner[1];
+        center = transformer(center);
+      }
+
+      if (z === "auto") {
+        z = calcZForBBox(bbox, w, h, request.query);
+        x = center[0];
+        y = center[1];
+
+        z = Math.min(z, 17);
+      } else {
+        z = +z;
+      }
+
+      const fetchedMarkersList = await Promise.all(
+        markerList.map((m) => {
+          return markers.fetch(m).catch((e) => console.error(e));
+        })
+      );
+
+      const presentMarkers = fetchedMarkersList.filter(Boolean);
+
+      overlays.push(renderMarkersOverlay(z, x, y, bearing, pitch, w, h, scale, presentMarkers));
     }
 
-    const transformer = raw ? mercator.inverse.bind(mercator) : item.dataProjWGStoInternalWGS;
-
-    if (transformer) {
-      const ll = transformer([x, y]);
-      x = ll[0];
-      y = ll[1];
-    }
-
-    const path = extractPathFromQuery(req.query, transformer);
-    const overlay = renderOverlay(z, x, y, bearing, pitch, w, h, scale, path, req.query);
-
-    let image = await renderMapImage(item, z, x, y, 0, 0, w, h, scale);
-
-    if (overlay) {
-      image = image.composite([{ input: overlay }]);
+    if (request.query.path) {
+      const path = extractPathFromQuery(request.query, transformer);
+      overlays.push(renderOverlay(z, x, y, bearing, pitch, w, h, scale, path, request.query));
     }
 
     if (item.watermark) {
-      const watermark = renderWatermarkOverlay(item.watermark, w, h, scale);
-      image = image.composite([{ input: watermark }]);
+      overlays.push(renderWatermarkOverlay(item.watermark, w, h, scale));
+    }
+
+    let image = await renderMapImage(item, z, x, y, bearing, pitch, w, h, scale);
+
+    if (overlays.length) {
+      image = image.composite(
+        overlays.map((input) => {
+          return { input };
+        })
+      );
     }
 
     const imageOutput = formatImage(image, format);
@@ -392,245 +516,46 @@ module.exports = function (options) {
       throw new NotFoundError();
     }
 
-    res.set({
+    response.writeHead(200, {
       "Last-Modified": item.lastModified,
       "Content-Type": `image/${format}`,
     });
-    res.status(200).send(buffer);
+    response.end(buffer);
+  }
+
+  function renderStaticRoute(request, response) {
+    for (let key in request.query) {
+      request.query[key.toLowerCase()] = request.query[key];
+    }
+
+    request.params.raw = true;
+    request.params.format = (request.query.format || "image/png").split("/").pop();
+    const bbox = (request.query.bbox || "").split(",");
+    request.params.minx = bbox[0];
+    request.params.miny = bbox[1];
+    request.params.maxx = bbox[2];
+    request.params.maxy = bbox[3];
+    request.params.width = request.query.width || "256";
+    request.params.height = request.query.height || "256";
+    if (request.query.scale) {
+      request.params.width /= request.query.scale;
+      request.params.height /= request.query.scale;
+      request.params.scale = `@${request.query.scale}`;
+    }
+
+    return renderStaticInputRoute("bounds", request, response);
   }
 
   async function renderBoundsRoute(req, res) {
-    const { id } = req.params;
-    const item = RenderManager.instance.get(id);
-
-    if (!item) {
-      return res.sendStatus(404);
-    }
-
-    const raw = req.params.raw;
-    const bbox = [+req.params.minx, +req.params.miny, +req.params.maxx, +req.params.maxy];
-    let center = [(bbox[0] + bbox[2]) / 2, (bbox[1] + bbox[3]) / 2];
-
-    const transformer = raw ? mercator.inverse.bind(mercator) : item.dataProjWGStoInternalWGS;
-
-    if (transformer) {
-      const minCorner = transformer(bbox.slice(0, 2));
-      const maxCorner = transformer(bbox.slice(2));
-      bbox[0] = minCorner[0];
-      bbox[1] = minCorner[1];
-      bbox[2] = maxCorner[0];
-      bbox[3] = maxCorner[1];
-      center = transformer(center);
-    }
-
-    const w = req.params.width | 0,
-      h = req.params.height | 0,
-      scale = getScale(req.params.scale),
-      format = RenderManager.formats[req.params.format];
-
-    const z = calcZForBBox(bbox, w, h, req.query),
-      x = center[0],
-      y = center[1],
-      bearing = 0,
-      pitch = 0;
-
-    const path = extractPathFromQuery(req.query, transformer);
-    const overlay = renderOverlay(z, x, y, bearing, pitch, w, h, scale, path, req.query);
-
-    let image = await renderMapImage(item, z, x, y, 0, 0, w, h, scale);
-
-    if (overlay) {
-      image = image.composite([{ input: overlay }]);
-    }
-
-    if (item.watermark) {
-      const watermark = renderWatermarkOverlay(item.watermark, w, h, scale);
-      image = image.composite([{ input: watermark }]);
-    }
-
-    const imageOutput = formatImage(image, format);
-
-    const buffer = await imageOutput.toBuffer();
-
-    if (!buffer) {
-      throw new NotFoundError();
-    }
-
-    res.set({
-      "Last-Modified": item.lastModified,
-      "Content-Type": `image/${format}`,
-    });
-    res.status(200).send(buffer);
+    return renderStaticInputRoute("bounds", req, res);
   }
 
   async function renderMarkersRoute(req, res) {
-    const { id } = req.params;
-    const item = RenderManager.instance.get(id);
-
-    if (!item) {
-      return res.sendStatus(404);
-    }
-
-    let w = req.params.width | 0,
-      h = req.params.height | 0,
-      z = req.params.z,
-      x = +req.params.x,
-      y = +req.params.y,
-      bearing = +(req.params.bearing || "0"),
-      pitch = +(req.params.pitch || "0"),
-      scale = getScale(req.params.scale),
-      format = RenderManager.formats[req.params.format];
-
-    const markerList = markers.parse(req.params.overlay);
-
-    const bbox = [Infinity, Infinity, -Infinity, -Infinity];
-
-    for (const marker of markerList) {
-      bbox[0] = Math.min(bbox[0], marker.x);
-      bbox[1] = Math.min(bbox[1], marker.y);
-      bbox[2] = Math.max(bbox[2], marker.x);
-      bbox[3] = Math.max(bbox[3], marker.y);
-    }
-
-    const bbox_ = mercator.convert(bbox, "900913");
-    const center = mercator.inverse([(bbox_[0] + bbox_[2]) / 2, (bbox_[1] + bbox_[3]) / 2]);
-
-    if (z === "auto") {
-      z = calcZForBBox(bbox, w, h, req.query);
-
-      z = Math.floor(Math.min(z, 15));
-    } else {
-      z = +z;
-    }
-
-    x = center[0];
-    y = center[1];
-
-    const markerFetchStart = new Date();
-    const fetchedMarkersList = await Promise.all(
-      markerList.map((m) => {
-        return markers.fetch(m).catch((e) => {
-          metrics.markerErrorCounter.inc();
-          log.error(e.message);
-        });
-      })
-    );
-    metrics.markerRequestDurationMillisecondsSummary.observe(new Date() - markerFetchStart);
-
-    const layerList = markers.makeLayerList(fetchedMarkersList.filter(Boolean));
-
-    if (!layerList.length) {
-      throw new Error("No markers to render, not rendering");
-    }
-
-    let image = await renderMapImage(item, z, x, y, bearing, pitch, w, h, scale, layerList);
-
-    if (item.watermark) {
-      const watermark = renderWatermarkOverlay(item.watermark, w, h, scale);
-      image = image.composite([{ input: watermark }]);
-    }
-
-    const imageOutput = formatImage(image, format);
-
-    const buffer = await imageOutput.toBuffer();
-
-    if (!buffer) {
-      throw new NotFoundError();
-    }
-
-    res.set({
-      "Last-Modified": item.lastModified,
-      "Content-Type": `image/${format}`,
-    });
-    res.status(200).send(buffer);
-  }
-
-  function renderStaticRoute(req, res) {
-    for (let key in req.query) {
-      req.query[key.toLowerCase()] = req.query[key];
-    }
-    req.params.raw = true;
-    req.params.format = (req.query.format || "image/png").split("/").pop();
-    const bbox = (req.query.bbox || "").split(",");
-    req.params.minx = bbox[0];
-    req.params.miny = bbox[1];
-    req.params.maxx = bbox[2];
-    req.params.maxy = bbox[3];
-    req.params.width = req.query.width || "256";
-    req.params.height = req.query.height || "256";
-    if (req.query.scale) {
-      req.params.width /= req.query.scale;
-      req.params.height /= req.query.scale;
-      req.params.scale = `@${req.query.scale}`;
-    }
-
-    return renderBoundsRoute(req, res);
+    return renderStaticInputRoute("markers", req, res);
   }
 
   async function renderAutoRoute(req, res) {
-    const { id } = req.params;
-    const item = RenderManager.instance.get(id);
-
-    if (!item) {
-      throw new NotFoundError();
-    }
-
-    const raw = req.params.raw;
-    const w = req.params.width | 0,
-      h = req.params.height | 0,
-      bearing = 0,
-      pitch = 0,
-      scale = getScale(req.params.scale),
-      format = RenderManager.formats[req.params.format];
-
-    const transformer = raw ? mercator.inverse.bind(mercator) : item.dataProjWGStoInternalWGS;
-
-    const path = extractPathFromQuery(req.query, transformer);
-    if (path.length < 2) {
-      throw new BadRequestError("Invalid path");
-    }
-
-    const bbox = [Infinity, Infinity, -Infinity, -Infinity];
-    for (const pair of path) {
-      bbox[0] = Math.min(bbox[0], pair[0]);
-      bbox[1] = Math.min(bbox[1], pair[1]);
-      bbox[2] = Math.max(bbox[2], pair[0]);
-      bbox[3] = Math.max(bbox[3], pair[1]);
-    }
-
-    const bbox_ = mercator.convert(bbox, "900913");
-    const center = mercator.inverse([(bbox_[0] + bbox_[2]) / 2, (bbox_[1] + bbox_[3]) / 2]);
-
-    const z = calcZForBBox(bbox, w, h, req.query),
-      x = center[0],
-      y = center[1];
-
-    const overlay = renderOverlay(z, x, y, bearing, pitch, w, h, scale, path, req.query);
-
-    let image = await renderMapImage(item, z, x, y, 0, 0, w, h, scale);
-
-    if (overlay) {
-      image = image.composite([{ input: overlay }]);
-    }
-
-    if (item.watermark) {
-      const watermark = renderWatermarkOverlay(item.watermark, w, h, scale);
-      image = image.composite([{ input: watermark }]);
-    }
-
-    const imageOutput = formatImage(image, format);
-
-    const buffer = await imageOutput.toBuffer();
-
-    if (!buffer) {
-      throw new NotFoundError();
-    }
-
-    res.set({
-      "Last-Modified": item.lastModified,
-      "Content-Type": `image/${format}`,
-    });
-    res.status(200).send(buffer);
+    return renderStaticInputRoute("auto", req, res);
   }
 
   function getStyle(req, res) {
@@ -655,25 +580,43 @@ module.exports = function (options) {
   const routes = new Router();
   const scalePattern = RenderManager.scalePattern(options.maxScaleFactor);
 
+  const floatPattern = "[+-]?(?:\\d+|\\d+.?\\d+)";
+  const centerPattern = util.format(
+    ":x(%s),:y(%s),:z(%s)(@:bearing(%s)(,:pitch(%s))?)?",
+    floatPattern,
+    floatPattern,
+    floatPattern,
+    floatPattern,
+    floatPattern
+  );
+  const autoPattern = "auto";
+  const boundsPattern = util.format(
+    ":minx(%s),:miny(%s),:maxx(%s),:maxy(%s)",
+    floatPattern,
+    floatPattern,
+    floatPattern,
+    floatPattern
+  );
+
   routes.get(
     `/:id/:z(\\d+)/:x(\\d+)/:y(\\d+):scale(${scalePattern})?.:format([\\w]+)`,
-    asyncRoute(renderRoute)
+    asyncRoute(renderTilesRoute)
   );
   routes.get(
     `/:id/static/:raw(raw)?/${centerPattern}/:width(\\d+)x:height(\\d+):scale(${scalePattern})?.:format([\\w]+)`,
-    asyncRoute(renderCenterRoute)
+    asyncRoute((req, res) => renderStaticInputRoute("center", req, res))
   );
   routes.get(
     `/:id/static/:raw(raw)?/${boundsPattern}/:width(\\d+)x:height(\\d+):scale(${scalePattern})?.:format([\\w]+)`,
-    asyncRoute(renderBoundsRoute)
+    asyncRoute((req, res) => renderStaticInputRoute("bounds", req, res))
   );
   routes.get(
     `/:id/static/:raw(raw)?/${autoPattern}/:width(\\d+)x:height(\\d+):scale(${scalePattern})?.:format([\\w]+)`,
-    asyncRoute(renderAutoRoute)
+    asyncRoute((req, res) => renderStaticInputRoute("auto", req, res))
   );
   routes.get(
     `/:id/static/:overlay(,?\\w{3}-[^/]+)/:z(\\d+|auto)(@:bearing(\\d+)(,:pitch(\\d+))?)?/:width(\\d+)x:height(\\d+):scale(${scalePattern})?.:format([\\w]+)`,
-    asyncRoute(renderMarkersRoute)
+    asyncRoute((req, res) => renderStaticInputRoute("markers", req, res))
   );
   routes.get("/:id/static", asyncRoute(renderStaticRoute));
   routes.get("/:id.json", asyncRoute(getStyle));
