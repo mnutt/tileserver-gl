@@ -1,6 +1,7 @@
 const { memoize } = require("../memoize");
 const generatedMarker = require("./generated");
 const urlMarker = require("./url");
+const mercator = new (require("@mapbox/sphericalmercator"))();
 
 const innerMarkerRegex = /(url|pin|ref)-([^(]+)\(([0-9.-]+),([0-9.-]+)\)(:\d*)?/g;
 
@@ -11,7 +12,9 @@ function groupBy(xs, fn) {
   }, {});
 }
 
-exports.parse = function (markerList = "") {
+const rawTransformer = mercator.inverse.bind(mercator);
+
+exports.parse = function (markerList = "", raw=false) {
   let result,
     markers = [],
     refs = {};
@@ -32,6 +35,11 @@ exports.parse = function (markerList = "") {
     }
 
     if (url) {
+      if (raw) {
+        const ll = rawTransformer([x, y]);
+        x = ll[0];
+        y = ll[1];
+      }
       markers.push({ url: url, x: +x, y: +y });
     }
   }
@@ -76,6 +84,7 @@ function layerForMarkerUrl(url) {
     type: "symbol",
     source: url,
     layout: {
+      "icon-allow-overlap": true,
       "icon-image": url,
     },
   };

@@ -13,7 +13,7 @@ exports.asyncRoute = function asyncRoute(fn) {
       } else if (error instanceof NotFoundError) {
         res.status(404).end(error.message || "Not found");
       } else {
-        log.error(error.message);
+        log.error(error.stack);
         res.sendStatus(500);
       }
     }

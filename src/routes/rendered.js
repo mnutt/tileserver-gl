@@ -6,7 +6,7 @@ const log = require("../log");
 const metrics = require("../metrics");
 
 const sharp = require("sharp");
-const { createCanvas } = require("canvas");
+const { createCanvas, Image } = require("canvas");
 const mercator = new (require("@mapbox/sphericalmercator"))();
 const utils = require("../utils");
 const markers = require("../markers");
@@ -47,7 +47,7 @@ function parseDimensions(params) {
 }
 
 function parseCoordinates(params) {
-  const z = +params.z;
+  const z = (params.z === "auto") ? "auto" : +params.z;
   const x = +params.x;
   const y = +params.y;
 
@@ -124,39 +124,6 @@ function renderOverlay(z, x, y, bearing, pitch, w, h, scale, path, query) {
   return canvas.toBuffer();
 }
 
-function renderMarkersOverlay(z, x, y, bearing, pitch, w, h, scale, markerList) {
-  if (!markerList || !markerList.length) {
-    return null;
-  }
-
-  const center = georeferenceMapCenter(x, y, z, h);
-
-  const canvas = createCanvas(scale * w, scale * h);
-  const ctx = canvas.getContext("2d");
-  ctx.scale(scale, scale);
-  if (bearing) {
-    ctx.translate(w / 2, h / 2);
-    ctx.rotate((-bearing / 180) * Math.PI);
-    ctx.translate(-center[0], -center[1]);
-  } else {
-    ctx.translate(-center[0] + w / 2, -center[1] + h / 2);
-  }
-
-  for (let marker of markerList) {
-    const location = precisePx([marker.x, marker.y], z);
-
-    ctx.drawImage(
-      marker.image,
-      location[0] - marker.image.width / 2,
-      location[1] - marker.image.height / 2,
-      marker.image.width,
-      marker.image.height
-    );
-  }
-
-  return canvas.toBuffer();
-}
-
 function calcZForBBox(bbox, w, h, query) {
   let z = 25;
 
@@ -192,9 +159,12 @@ module.exports = function (options) {
     scale,
     layerList = []
   ) {
-    if (Math.abs(lon) > 180 || Math.abs(lat) > 85.06 || lon !== lon || lat !== lat) {
+    if (typeof(lat) === "undefined" || typeof(lon) === "undefined" ||
+        Math.abs(lon) > 180 || Math.abs(lat) > 85.06 ||
+        lon !== lon || lat !== lat) {
       throw new BadRequestError(`Invalid center: ${lon},${lat}`);
     }
+
 
     if (
       Math.min(width, height) <= 0 ||
@@ -388,6 +358,7 @@ module.exports = function (options) {
     let x, y, z, bearing, pitch;
 
     const overlays = [];
+    const layerList = [];
 
     if (type === "center") {
       ({ x, y, z, bearing, pitch } = parseCoordinates(params));
@@ -444,7 +415,7 @@ module.exports = function (options) {
       bearing = 0;
       pitch = 0;
     } else if (type === "markers") {
-      const markerList = markers.parse(params.input);
+      const markerList = markers.parse(params.markers, params.raw);
 
       const bbox = [Infinity, Infinity, -Infinity, -Infinity];
 
@@ -456,23 +427,17 @@ module.exports = function (options) {
       }
 
       const bbox_ = mercator.convert(bbox, "900913");
-      const center = mercator.inverse([(bbox_[0] + bbox_[2]) / 2, (bbox_[1] + bbox_[3]) / 2]);
+      let center = mercator.inverse([(bbox_[0] + bbox_[2]) / 2, (bbox_[1] + bbox_[3]) / 2]);
 
-      if (transformer) {
-        const minCorner = transformer(bbox.slice(0, 2));
-        const maxCorner = transformer(bbox.slice(2));
-        bbox[0] = minCorner[0];
-        bbox[1] = minCorner[1];
-        bbox[2] = maxCorner[0];
-        bbox[3] = maxCorner[1];
-        center = transformer(center);
-      }
+      // we don't apply transformer to center since we applied it to each marker individually
+
+      ({z, bearing, pitch} = parseCoordinates(params));
+
+      x = center[0];
+      y = center[1];
 
       if (z === "auto") {
         z = calcZForBBox(bbox, w, h, request.query);
-        x = center[0];
-        y = center[1];
-
         z = Math.min(z, 17);
       } else {
         z = +z;
@@ -484,9 +449,7 @@ module.exports = function (options) {
         })
       );
 
-      const presentMarkers = fetchedMarkersList.filter(Boolean);
-
-      overlays.push(renderMarkersOverlay(z, x, y, bearing, pitch, w, h, scale, presentMarkers));
+      markers.makeLayerList(fetchedMarkersList.filter(Boolean)).forEach(marker => layerList.push(marker));
     }
 
     if (request.query.path) {
@@ -498,7 +461,7 @@ module.exports = function (options) {
       overlays.push(renderWatermarkOverlay(item.watermark, w, h, scale));
     }
 
-    let image = await renderMapImage(item, z, x, y, bearing, pitch, w, h, scale);
+    let image = await renderMapImage(item, z, x, y, bearing, pitch, w, h, scale, layerList);
 
     if (overlays.length) {
       image = image.composite(
@@ -615,7 +578,7 @@ module.exports = function (options) {
     asyncRoute((req, res) => renderStaticInputRoute("auto", req, res))
   );
   routes.get(
-    `/:id/static/:overlay(,?\\w{3}-[^/]+)/:z(\\d+|auto)(@:bearing(\\d+)(,:pitch(\\d+))?)?/:width(\\d+)x:height(\\d+):scale(${scalePattern})?.:format([\\w]+)`,
+    `/:id/static/:raw(raw)?/:markers(,?\\w{3}-[^/]+)/:z(\\d+|auto)(@:bearing(\\d+)(,:pitch(\\d+))?)?/:width(\\d+)x:height(\\d+):scale(${scalePattern})?.:format([\\w]+)`,
     asyncRoute((req, res) => renderStaticInputRoute("markers", req, res))
   );
   routes.get("/:id/static", asyncRoute(renderStaticRoute));
