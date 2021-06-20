@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+
+<html>
+    <head>
+        <meta charset="utf-8">
+        <link rel="stylesheet" href="/static.css" />
+    </head>
+
+    <body>
+        <section class="sidebar">
+            <h1>
+                <a href="/">
+                    <img width="300" height="71" src="/images/logo.png" alt="Tileserver GL">
+                </a>
+            </h1>
+
+            <form method="GET">
+                <div class="field">
+                    <label>Static Image Type</label>
+
+                    <div class="pill">
+                        <input type="radio" id="type-center" name="type" value="center">
+                        <label for="type-center">Center</label>
+
+                        <input type="radio" id="type-bounding" name="type" value="bounds">
+                        <label for="type-bounding">Bounds</label>
+
+                        <input type="radio" id="type-markers" name="type" value="markers">
+                        <label for="type-markers">Markers</label>
+
+                        <input type="radio" id="type-tile" name="type" value="tile">
+                        <label for="type-tile">Tile</label>
+                    </div>
+                </div>
+
+                <div class="fieldset">
+                    <div class="field">
+                        <label for="format">format</label>
+                        <select name="format">
+                            <option value="png">png</option>
+                            <option value="jpeg">jpeg</option>
+                        </select>
+                    </div>
+
+                    <div class="field">
+                        <label for="scale">Scale</label>
+                        <select name="scale">
+                            <option value="1">1x</option>
+                            <option value="2">2x</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="fieldset">
+                    <div class="field">
+                        <label for="width">Width</label>
+                        <input type="number" name="width" size="7" step="1" max="3000" />
+                    </div>
+
+                    <div class="field">
+                        <label for="height">Height</label>
+                        <input type="number" name="height" size="7" step="1" max="3000" />
+                    </div>
+                </div>
+
+                <div class="fieldset">
+                        <div class="field">
+                            <label for="raw"><input type="checkbox" id="raw" name="raw"> Mercator Coordinates</label>
+                        </div>
+                </div>
+
+                <hr />
+
+                <div class="center">
+                    <div class="fieldset">
+                        <div class="field">
+                            <label for="lon">Longitude</label>
+                            <input type="number" name="lon" size="7" step="0.002" />
+                        </div>
+
+                        <div class="field">
+                            <label for="lat">Latitude</label>
+                            <input type="number" name="lat" size="7" step="0.002" />
+                        </div>
+                    </div>
+
+                    <div class="fieldset">
+                        <div class="field">
+                            <label for="zoom">Zoom</label>
+                            <input type="number" name="zoom" size="4" step="1" min="1" max="24" />
+                        </div>
+
+                        <div class="field">
+                            <label for="bearing">Bearing</label>
+                            <input type="number" name="bearing" size="4" step="1" />
+                        </div>
+
+                        <div class="field">
+                            <label for="pitch">Pitch</label>
+                            <input type="number" name="pitch" size="4" step="1" max=90 />
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bounds">
+                    <div class="fieldset">
+                        <div class="field"></div>
+                        <div class="field">
+                            <label for="maxy">Max Latitude</label>
+                            <input type="number" name="maxy" size="10" step="0.002" />
+                        </div>
+                        <div class="field"></div>
+                    </div>
+
+                    <div class="fieldset">
+                        <div class="field">
+                            <label for="minx">Min Longitude</label>
+                            <input type="number" name="minx" size="10" step="0.002" />
+                        </div>
+
+                        <div class="field">
+                            <label for="maxx">Max Longitude</label>
+                            <input type="number" name="maxx" size="10" step="0.002" />
+                        </div>
+                    </div>
+
+                    <div class="fieldset">
+                        <div class="field"></div>
+                        <div class="field">
+                            <label for="miny">Min Latitude</label>
+                            <input type="number" name="miny" size="10" step="0.002" />
+                        </div>
+                        <div class="field"></div>
+                    </div>
+                </div>
+
+                <div class="tile">
+                    <div class="fieldset">
+                        <div class="field">
+                            <label for="x">x</label>
+                            <input type="number" name="x" size="3" step="1" />
+                        </div>
+
+                        <div class="field">
+                            <label for="y">y</label>
+                            <input type="number" name="y" size="3" step="1" />
+                        </div>
+
+                        <div class="field">
+                            <label for="z">z</label>
+                            <input type="number" name="z" size="3" step="1" />
+                        </div>
+                    </div>
+                </div>
+
+                <div class="markers">
+                    <div class="field-name">Markers</div>
+
+                    <div class="marker-list"></div>
+
+                    <button type="button" class="small-button add-marker">+ Add Marker</a>
+                </div>
+
+            </form>
+        </section>
+
+        <section class="main">
+            <div class="url">
+                <label>Generated URL</label>
+                <div class="value"></div>
+            </div>
+
+            <div class="preview">
+                <img src="" />
+            </div>
+        </section>
+
+        <div class="marker marker-template">
+            <div style="display: flex; font-size: 0.9em;">
+                <div class="name" style="flex: 1; font-style: italic;">Marker</div>
+                <button type="button" class="small-button close" style="font-weight: bold; text-decoration: none;">&times;</button>
+            </div>
+
+            <div class="fieldset">
+                <div class="field">
+                    <label for="marker-type[]">Type</label>
+                    <select name="marker-type[]" class="marker-type">
+                        <option value="color">Color</option>
+                        <option value="url">URL</option>
+                    </select>
+                </div>
+
+                <div class="field color-field">
+                    <label for="marker-color[]">Color</label>
+                    <input type="color" name="marker-color[]" class="marker-color" size="4" />
+                </div>
+
+                <div class="field size-field" style="margin-right: 0;">
+                    <label for="marker-size[]">Size</label>
+                    <select name="marker-size[]" class="marker-size">
+                        <option value="s">Small</option>
+                        <option value="m">Medium</option>
+                        <option value="l">Large</option>
+                    </select>
+                </div>
+
+                <div class="field url-field">
+                    <label for="marker-url[]">URL</label>
+                    <input type="text" name="marker-url[]" class="marker-url" size="6" />
+                </div>
+            </div>
+
+            <div class="fieldset">
+                <div class="field">
+                    <label for="marker-lat[]">Latitude</label>
+                    <input type="number" name="marker-lat[]" class="marker-lat" size="10" step="0.002" />
+                </div>
+
+                <div class="field">
+                    <label for="marker-lon[]">Longitude</label>
+                    <input type="number" name="marker-lon[]" class="marker-lon" size="10" step="0.002" />
+                </div>
+            </div>
+        </div>
+
+        <script src="/static.js"></script>
+    </body>
+
+</html>

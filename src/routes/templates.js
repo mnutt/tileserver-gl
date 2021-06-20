@@ -138,6 +138,11 @@ module.exports = function (options) {
     res.status(200).send(template(response));
   }
 
+  function staticTemplate(req, res) {
+    const template = TemplateManager.instance.get("static");
+    res.status(200).send(template({}));
+  }
+
   function wmtsTemplate(req, res) {
     const template = TemplateManager.instance.get("wmts");
 
@@ -197,6 +202,7 @@ module.exports = function (options) {
 
   routes.get("/$", indexTemplate);
   routes.get("/styles/:id/$", viewerTemplate);
+  routes.get("/styles/:id/static-preview$", staticTemplate);
   routes.get("/styles/:id/wmts.xml", wmtsTemplate);
   routes.get("/data/:id/$", dataTemplate);
 

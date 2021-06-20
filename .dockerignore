@@ -4,3 +4,4 @@
 !package.json
 !yarn.lock
 !docker-entrypoint.sh
+!images
