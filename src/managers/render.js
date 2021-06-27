@@ -239,7 +239,7 @@ class RenderManager {
 
   static scalePattern(maxScaleFactor = 3) {
     let scalePattern = "";
-    for (let i = 1; i <= maxScaleFactor; i++) {
+    for (let i = 2; i <= maxScaleFactor; i++) {
       scalePattern += i.toFixed();
     }
     return `@[${scalePattern}]x`;
