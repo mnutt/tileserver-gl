@@ -31,9 +31,16 @@ const defaultData = {
     },
     {
       type: "url",
-      url: "https://ssl.gstatic.com/gb/images/a/99be7c5086.png",
+      url: "http://localhost:8080/images/logo.png",
       lat: 47.378,
       lon: 8.544
+    },
+    {
+      type: "color",
+      color: "#4732FF",
+      size: 'm',
+      lat: 47.374,
+      lon: 8.548
     }
   ]
 };
