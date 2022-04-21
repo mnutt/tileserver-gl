@@ -31,7 +31,7 @@ const defaultData = {
     },
     {
       type: "url",
-      url: "http://localhost:8080/images/logo.png",
+      url: document.location.origin + "/images/logo.png",
       lat: 47.378,
       lon: 8.544
     },
@@ -294,7 +294,7 @@ function updatePreview(data) {
 
   const img = document.querySelector('.preview img');
   img.src = ""; // clear existing to make it obvious image is reloading
-  img.src = 'http://localhost:5050' + imageUrl;
+  img.src = document.location.origin + imageUrl;
 
   if (data.type === "tile") {
     img.setAttribute("width", null);
