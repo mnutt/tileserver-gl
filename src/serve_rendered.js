@@ -17,7 +17,7 @@ const clone = require('clone');
 const Color = require('color');
 const express = require('express');
 const mercator = new (require('@mapbox/sphericalmercator'))();
-const mbgl = require('@mapbox/mapbox-gl-native');
+const mlgl = require('@mach_kernel/maplibre-gl-native');
 const MBTiles = require('@mapbox/mbtiles');
 const proj4 = require('proj4');
 const request = require('request');
@@ -29,9 +29,9 @@ const httpTester = /^(http(s)?:)?\/\//;
 
 const getScale = scale => (scale || '@1x').slice(1, 2) | 0;
 
-mbgl.on('message', e => {
+mlgl.on('message', e => {
   if (e.severity === 'WARNING' || e.severity === 'ERROR') {
-    console.log('mbgl:', e);
+    console.log('mlgl:', e);
   }
 });
 
@@ -54,10 +54,10 @@ const cachedEmptyResponses = {
 };
 
 /**
- * Create an appropriate mbgl response for http errors.
+ * Create an appropriate mlgl response for http errors.
  * @param {string} format The format (a sharp format or 'pbf').
  * @param {string} color The background color (or empty string for transparent).
- * @param {Function} callback The mbgl callback.
+ * @param {Function} callback The mlgl callback.
  */
 function createEmptyResponse(format, color, callback) {
   if (!format || format === 'pbf') {
@@ -250,9 +250,9 @@ module.exports = {
 
       const pool = item.map.renderers[scale];
       pool.acquire((err, renderer) => {
-        const mbglZ = Math.max(0, z - 1);
+        const mlglZ = Math.max(0, z - 1);
         const params = {
-          zoom: mbglZ,
+          zoom: mlglZ,
           center: [lon, lat],
           bearing: bearing,
           pitch: pitch,
@@ -572,7 +572,7 @@ module.exports = {
     let styleJSON;
     const createPool = (ratio, min, max) => {
       const createRenderer = (ratio, createCallback) => {
-        const renderer = new mbgl.Map({
+        const renderer = new mlgl.Map({
           mode: "tile",
           ratio: ratio,
           request: (req, callback) => {
