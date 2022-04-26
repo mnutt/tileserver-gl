@@ -18,7 +18,7 @@
   },
   "dependencies": {
     "@mapbox/glyph-pbf-composite": "0.0.3",
-    "@acalcutt/maplibre-gl-native": "5.0.2",
+    "@acalcutt/maplibre-gl-native": "5.0.7",
     "@maplibre/maplibre-gl-style-spec": "15.0.0",
     "@mapbox/mbtiles": "0.12.1",
     "@mapbox/sphericalmercator": "1.2.0",
