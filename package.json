@@ -1,12 +1,12 @@
 {
-  "name": "tileserver-gl",
+  "name": "@acalcutt/tileserver-gl",
   "version": "3.1.2",
   "description": "Map tile server for JSON GL styles - vector and server side generated raster tiles",
   "main": "src/main.js",
   "bin": "src/main.js",
   "repository": {
     "type": "git",
-    "url": "https://github.com/acalcutt/tileserver-gl.git"
+    "url": "git+https://github.com/acalcutt/tileserver-gl.git"
   },
   "license": "BSD-2-Clause",
   "engines": {
