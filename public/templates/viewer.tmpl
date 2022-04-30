@@ -43,9 +43,25 @@
          selectThreshold: 5
       }));
     } else {
+	
+		function findValueOfProperty(obj, propertyName){
+			let reg = new RegExp(propertyName, "i"); // "i" to make it case insensitive
+			return Object.keys(obj).reduce((result, key) => {
+				if( reg.test(key) ) result.push(obj[key]);
+				return result;
+			}, []);
+		}
+
+		function decodeHTMLEntities(text) {
+		  var textArea = document.createElement('textarea');
+		  textArea.innerHTML = text;
+		  return textArea.value;
+		}
+
 		var map = L.map('map', { zoomControl: false });
 		new L.Control.Zoom({ position: 'topright' }).addTo(map);
 		
+		var tile_url, tile_attribution, tile_minzoom, tile_maxzoom;
 		fetch('{{public_url}}styles/{{id}}.json{{&key_query}}')
 		  .then(
 			response => {
@@ -57,16 +73,42 @@
 
 			  response.json().then(function(data) {
 				// Get TileJSON url, Attribution, and Min/Max Zoom from style json file
-				var tile_url = data.tiles[0];
-				var tile_attribution = data.attribution;
-				var tile_minzoom = data.minZoom;
-				var tile_maxzoom = data.maxZoom;
+				for (const [key, value] of Object.entries(data)) {
+					var keyl = key.toLowerCase();
+					switch(keyl) {
+					  case "tiles":
+						tile_url = value[0];
+						break;
+					  case "attribution":
+						tile_attribution = decodeHTMLEntities(value);
+						break;
+					  case "minzoom":
+						tile_minzoom = value;
+						break;
+					  case "maxzoom":
+						tile_maxzoom = value;
+						break;
+					}
+					console.log(`${keyl}: ${value}`);
+				}
+				
+				// Format Attributions. remove any entries that are whitespace. remove any entries that are substrings of another entry. first sort by length so that substrings come first
+				var attributions = tile_attribution.split("; ");
+				attributions = attributions.filter(e => String(e).trim());
+				attributions.sort((a, b) => a.length - b.length);
+				attributions = attributions.filter((attrib, i) => {
+					for (let j = i + 1; j < attributions.length; j++) {
+						if (attributions[j].indexOf(attrib) >= 0) { return false; }
+					}
+					return true;
+				});
+				attribHTML = attributions.join(' | ');
 
 				// Load TilJSON layer.
 				L.tileLayer(tile_url, {
 					minZoom: tile_minzoom,
 					maxZoom: tile_maxzoom,
-					attribution: tile_attribution
+					attribution: attribHTML
 				}).addTo(map);
 				
 				map.eachLayer(function(layer) {
