@@ -9,7 +9,7 @@ Vector and raster maps with GL styles. Server side rendering by Mapbox GL Native
 
 ## Get Started
 
-Make sure you have Node.js version **10** or above installed (running `node -v` it should output something like `v10.17.0`).
+Make sure you have Node.js version **10** or above installed (up to node 16 has been tested)
 
 Install `tileserver-gl` with server-side raster rendering of vector tiles with npm
 
