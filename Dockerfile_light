@@ -1,4 +1,4 @@
-FROM node:10-stretch
+FROM node:16-bullseye
 
 ENV NODE_ENV="production"
 ENV CHOKIDAR_USEPOLLING=1

@@ -22,7 +22,7 @@ var packageJson = require('./package');
 packageJson.name += '-light';
 packageJson.description = 'Map tile server for JSON GL styles - serving vector tiles';
 delete packageJson.dependencies['canvas'];
-delete packageJson.dependencies['@mapbox/mapbox-gl-native'];
+delete packageJson.dependencies['@acalcutt/maplibre-gl-native'];
 delete packageJson.dependencies['sharp'];
 
 delete packageJson.optionalDependencies;
@@ -43,11 +43,11 @@ if (process.argv.length > 2 && process.argv[2] == "--no-publish") {
 /* PUBLISH */
 
 // tileserver-gl
-require('child_process').execSync('npm publish .', {
+require('child_process').execSync('npm publish . --access public', {
   stdio: 'inherit'
 });
 
 // tileserver-gl-light
-require('child_process').execSync('npm publish light', {
+require('child_process').execSync('npm publish light --access public', {
   stdio: 'inherit'
 });

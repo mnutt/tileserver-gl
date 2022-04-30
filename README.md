@@ -2,8 +2,8 @@
 
 
 # TileServer GL
-[![Build Status](https://travis-ci.org/maptiler/tileserver-gl.svg?branch=master)](https://travis-ci.org/maptiler/tileserver-gl)
-[![Docker Hub](https://img.shields.io/badge/docker-hub-blue.svg)](https://hub.docker.com/r/maptiler/tileserver-gl/)
+[![Build Status](https://travis-ci.org/wifidb/tileserver-gl.svg?branch=master)](https://travis-ci.org/wifidb/tileserver-gl)
+[![Docker Hub](https://img.shields.io/badge/docker-hub-blue.svg)](https://hub.docker.com/r/wifidb/tileserver-gl/)
 
 Vector and raster maps with GL styles. Server side rendering by Mapbox GL Native. Map tile server for Mapbox GL JS, Android, iOS, Leaflet, OpenLayers, GIS via WMTS, etc.
 
@@ -14,7 +14,7 @@ Make sure you have Node.js version **10** installed (running `node -v` it should
 Install `tileserver-gl` with server-side raster rendering of vector tiles with npm
 
 ```bash
-npm install -g tileserver-gl
+npm install -g @acalcutt/tileserver-gl
 ```
 
 Now download vector tiles from [OpenMapTiles](https://openmaptiles.org/downloads/).
@@ -36,7 +36,7 @@ Alternatively, you can use the `tileserver-gl-light` package instead, which is p
 An alternative to npm to start the packed software easier is to install [Docker](https://www.docker.com/) on your computer and then run in the directory with the downloaded MBTiles the command:
 
 ```bash
-docker run --rm -it -v $(pwd):/data -p 8080:80 maptiler/tileserver-gl
+docker run --rm -it -v $(pwd):/data -p 8080:80 wifidb/tileserver-gl
 ```
 
 This will download and start a ready to use container on your computer and the maps are going to be available in webbrowser on localhost:8080.
