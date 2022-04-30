@@ -10,7 +10,6 @@
   <script src="{{public_url}}maplibre-gl.js{{&key_query}}"></script>
   <script src="{{public_url}}maplibre-gl-inspect.min.js{{&key_query}}"></script>
   <script src="{{public_url}}leaflet.js{{&key_query}}"></script>
-  <script src="{{public_url}}leaflet-maplibre-gl.js{{&key_query}}"></script>
   <script src="{{public_url}}leaflet-hash.js{{&key_query}}"></script>
   <style>
     body { margin:0; padding:0; }
@@ -44,29 +43,43 @@
          selectThreshold: 5
       }));
     } else {
-      var map = L.map('map', { zoomControl: false });
-      L.maplibreGL({
-        style: {
-           version: 8,
-           sources: {
-                 raster_source: {
-                    type: 'raster',
-                    url: '{{public_url}}styles/{{id}}.json{{&key_query}}'
-                 }
-           },
-           layers: [
-              {
-                 id: 'raster-tiles',
-                 type: 'raster',
-                 source: 'raster_source'
-              }
-           ]
-        }
-      }).addTo(map);
-      new L.Control.Zoom({ position: 'topright' }).addTo(map);
-      setTimeout(function() {
-        new L.Hash(map);
-      }, 0);
+		var map = L.map('map', { zoomControl: false });
+		new L.Control.Zoom({ position: 'topright' }).addTo(map);
+		
+		fetch('{{public_url}}styles/{{id}}.json{{&key_query}}')
+		  .then(
+			response => {
+			  if (response.status !== 200) {
+				console.log('There was an issue fetching the style json. Status Code: ' +
+				  response.status);
+				return;
+			  }
+
+			  response.json().then(function(data) {
+				// Get TileJSON url, Attribution, and Min/Max Zoom from style json file
+				var tile_url = data.tiles[0];
+				var tile_attribution = data.attribution;
+				var tile_minzoom = data.minZoom;
+				var tile_maxzoom = data.maxZoom;
+
+				// Load TilJSON layer.
+				L.tileLayer(tile_url, {
+					minZoom: tile_minzoom,
+					maxZoom: tile_maxzoom,
+					attribution: tile_attribution
+				}).addTo(map);
+				
+				map.eachLayer(function(layer) {
+				  // do not add scale prefix even if retina display is detected
+				  layer.scalePrefix = '.';
+				});
+			  });
+			})
+		  .catch(err => console.log('Could not fetch style json', err));
+      
+		setTimeout(function() {
+			new L.Hash(map);
+		}, 0);
     }
   </script>
 </body>

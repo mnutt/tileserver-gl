@@ -20,9 +20,7 @@
   {{^is_vector}}
   <link rel="stylesheet" type="text/css" href="{{public_url}}maplibre-gl.css{{&key_query}}" />
   <link rel="stylesheet" type="text/css" href="{{public_url}}leaflet.css{{&key_query}}" />
-  <script src="{{public_url}}maplibre-gl.js{{&key_query}}"></script>
   <script src="{{public_url}}leaflet.js{{&key_query}}"></script>
-  <script src="{{public_url}}leaflet-maplibre-gl.js{{&key_query}}"></script>
   <script src="{{public_url}}leaflet-hash.js{{&key_query}}"></script>
   <style>
     body { margin:0; padding:0; }
@@ -77,30 +75,40 @@
   <h1 style="display:none;">{{name}}</h1>
   <div id='map'></div>
   <script>
-    var map = L.map('map', { zoomControl: false });
-    L.maplibreGL({
-      style: {
-         version: 8,
-         sources: {
-               raster_source: {
-                  type: 'raster',
-                  url: '{{public_url}}data/{{id}}.json{{&key_query}}'
-               }
-         },
-         layers: [
-            {
-               id: 'raster_layer',
-               type: 'raster',
-               source: 'raster_source'
-            }
-         ]
-      }
-    }).addTo(map);
-    map.eachLayer(function(layer) {
-      // do not add scale prefix even if retina display is detected
-      layer.scalePrefix = '.';
-    });
-    new L.Control.Zoom({ position: 'topright' }).addTo(map);
+	var map = L.map('map', { zoomControl: false });
+	new L.Control.Zoom({ position: 'topright' }).addTo(map);
+
+	fetch('{{public_url}}data/{{id}}.json{{&key_query}}')
+	  .then(
+		response => {
+		  if (response.status !== 200) {
+			console.log('There was an issue fetching the data json. Status Code: ' +
+			  response.status);
+			return;
+		  }
+
+		  response.json().then(function(data) {
+			// Get TileJSON url, Attribution, and Min/Max Zoom from data json file
+			var tile_url = data.tiles[0];
+			var tile_attribution = data.attribution;
+			var tile_minzoom = data.minZoom;
+			var tile_maxzoom = data.maxZoom;
+
+			L.tileLayer(tile_url, {
+				minZoom: tile_minzoom,
+				maxZoom: tile_maxzoom,
+				attribution: tile_attribution
+			}).addTo(map);
+			
+			map.eachLayer(function(layer) {
+			  // do not add scale prefix even if retina display is detected
+			  layer.scalePrefix = '.';
+			});
+		  });
+		})
+	  .catch(err => console.log('Could not fetch data json', err));
+
+    
     setTimeout(function() {
       new L.Hash(map);
     }, 0);
