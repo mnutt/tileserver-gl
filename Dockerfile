@@ -43,7 +43,6 @@ RUN export DEBIAN_FRONTEND=noninteractive \
   
 RUN curl http://archive.ubuntu.com/ubuntu/pool/main/libj/libjpeg-turbo/libjpeg-turbo8_2.0.3-0ubuntu1_amd64.deb --output libjpeg-turbo8_2.0.3-0ubuntu1_amd64.deb
 RUN apt install ./libjpeg-turbo8_2.0.3-0ubuntu1_amd64.deb
-RUN curl http://ftp.us.debian.org/debian/pool/main/g/glibc/libc6-udeb_2.28-10+deb10u1_amd64.udeb --output libjpeg-turbo8_2.0.3-0ubuntu1_amd64.deb
 RUN curl http://archive.ubuntu.com/ubuntu/pool/main/i/icu/libicu66_66.1-2ubuntu2_amd64.deb --output libicu66_66.1-2ubuntu2_amd64.deb
 RUN apt install ./libicu66_66.1-2ubuntu2_amd64.deb
 
