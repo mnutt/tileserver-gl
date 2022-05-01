@@ -4,6 +4,7 @@ on:
   push:
     tags:
       - '**'
+  workflow_dispatch:
 
 jobs:
   all:
@@ -55,3 +56,10 @@ jobs:
           context: .
           push: true
           tags: wifidb/tileserver-gl:latest, wifidb/tileserver-gl:${{github.ref_name}}
+          
+      - name: Publish to NPM
+        run: |
+          npm config set //registry.npmjs.org/:_authToken ${NPM_TOKEN}
+          npm publish --access public
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
