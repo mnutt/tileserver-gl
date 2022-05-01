@@ -10,7 +10,7 @@
   },
   "license": "BSD-2-Clause",
   "engines": {
-    "node": ">=10"
+    "node": ">=12"
   },
   "scripts": {
     "test": "mocha test/**.js --timeout 10000",
@@ -38,7 +38,7 @@
     "pbf": "3.2.1",
     "proj4": "2.8.0",
     "request": "2.88.2",
-    "sharp": "0.26.2",
+    "sharp": "0.29.0",
     "tileserver-gl-styles": "2.0.0"
   },
   "devDependencies": {
