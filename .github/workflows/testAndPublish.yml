@@ -56,13 +56,13 @@ jobs:
           context: .
           push: true
           tags: wifidb/tileserver-gl:latest, wifidb/tileserver-gl:${{github.ref_name}}
-          
-      #- name: Publish to Full Version NPM
-      #  run: |
-      #    npm config set //registry.npmjs.org/:_authToken ${NPM_TOKEN}
-      #    npm publish --access public
-      #  env:
-      #    NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+      -
+        name: Publish to Full Version NPM
+        run: |
+          npm config set //registry.npmjs.org/:_authToken ${NPM_TOKEN}
+          npm publish --access public
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       -
         name: Create Tileserver Light Directory
