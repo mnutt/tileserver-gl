@@ -12,3 +12,10 @@ cd light
 docker build --no-cache -t wifidb/tileserver-gl-light:latest .
 docker push wifidb/tileserver-gl-light:latest
 npm publish --access public
+
+# Publishing new version using github testAndPublish workflow
+
+cd [tileserver-gl] dir
+git tag vx.x.x
+git push --tags
+[Workflow will build and push docker and npm]
