@@ -7,7 +7,8 @@ on:
   workflow_dispatch:
 
 jobs:
-  all:
+  build_publish:
+    name: Build, publish
     runs-on: ubuntu-latest
     env:
       CXX: g++-4.8
@@ -50,7 +51,7 @@ jobs:
         name: Run tests
         run: xvfb-run --server-args="-screen 0 1024x768x24" npm test
       -
-        name: Build and publish to Docker Hub
+        name: Build and publish Full Version to Docker Hub
         uses: docker/build-push-action@v2
         with:
           context: .
