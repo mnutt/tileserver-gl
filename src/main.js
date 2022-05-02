@@ -194,8 +194,8 @@ fs.stat(path.resolve(opts.config), (err, stats) => {
         console.log(`No MBTiles specified, using ${mbtiles}`);
         return startWithMBTiles(mbtiles);
       } else {
-        const url = 'https://github.com/klokantech/tileserver-gl-data/raw/master/data/zurich.mbtiles';
-        const filename = 'zurich.mbtiles';
+        const url = 'https://github.com/acalcutt/tileserver-gl/releases/download/test_data/zurich_switzerland.mbtiles';
+        const filename = 'zurich_switzerland.mbtiles';
         const stream = fs.createWriteStream(filename);
         console.log(`No MBTiles found`);
         console.log(`[DEMO] Downloading sample data (${filename}) from ${url}`);
