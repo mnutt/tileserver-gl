@@ -38,7 +38,7 @@ jobs:
       -
         name: Run tests
         run: xvfb-run --server-args="-screen 0 1024x768x24" npm test
-       -
+      -
         name: Remove Test Data
         run: rm -R test_data*
       -
@@ -61,7 +61,7 @@ jobs:
         with:
           tag: v${{ steps.version-bump.outputs.newTag }}
           message: "Latest release"
-       -
+      -
         name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v1
       -
