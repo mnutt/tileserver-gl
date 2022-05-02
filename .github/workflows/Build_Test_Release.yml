@@ -42,8 +42,8 @@ jobs:
         name: Remove Test Data
         run: rm -R test_data*
       -
-        name: "cat original package.json"
-        run: cat ./package.json
+        name: "Old Version Number"
+        run: cat package.json | grep version
       -
         name: "Automated Version Bump"
         id: version-bump
@@ -53,8 +53,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       -
-        name: "cat new package.json"
-        run: cat ./package.json
+        name: "New Version Number"
+        run: cat package.json | grep version
       -
         name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v1
