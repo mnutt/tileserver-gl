@@ -1,4 +1,4 @@
-name: "Version Bump, Build, Test, Publish"
+name: "Build, Test, Version, Publish"
 
 on:
   push:
@@ -15,40 +15,6 @@ jobs:
         uses: "actions/checkout@v2"
         with:
           ref: ${{ github.ref }}
-      -
-        name: "cat package.json"
-        run: cat ./package.json
-      -
-        name: "Automated Version Bump"
-        id: version-bump
-        uses: "phips28/gh-action-bump-version@master"
-        with:
-          tag-prefix: ''
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      -
-        name: "cat package.json"
-        run: cat ./package.json
-      -
-        name:  'Create Github Tag'
-        uses: rickstaa/action-create-tag@v1
-        with:
-          tag: v${{ steps.version-bump.outputs.newTag }}
-          message: "Latest release"
-      -
-        name:  'Output Step'
-        env:
-          NEW_TAG: ${{ steps.version-bump.outputs.newTag }}
-        run: echo "new tag $NEW_TAG"
-      -
-        name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
-      -
-        name: Login to DockerHub
-        uses: docker/login-action@v1
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
       -
         name: Set up node
         uses: actions/setup-node@v2
@@ -72,6 +38,38 @@ jobs:
       -
         name: Run tests
         run: xvfb-run --server-args="-screen 0 1024x768x24" npm test
+       -
+        name: Remove Test Data
+        run: rm -R test_data*
+      -
+        name: "cat original package.json"
+        run: cat ./package.json
+      -
+        name: "Automated Version Bump"
+        id: version-bump
+        uses: "phips28/gh-action-bump-version@master"
+        with:
+          tag-prefix: ''
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      -
+        name: "cat new package.json"
+        run: cat ./package.json
+      -
+        name:  'Create Github Tag'
+        uses: rickstaa/action-create-tag@v1
+        with:
+          tag: v${{ steps.version-bump.outputs.newTag }}
+          message: "Latest release"
+       -
+        name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+      -
+        name: Login to DockerHub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
       -
         name: Build and publish Full Version to Docker Hub
         uses: docker/build-push-action@v2
