@@ -76,9 +76,8 @@ jobs:
       -
         name: Build and publish Light Version to Docker Hub
         uses: docker/build-push-action@v2
-        working-directory: ./light
         with:
-          context: .
+          context: "{{defaultContext}}:light"
           push: true
           tags: wifidb/tileserver-gl-light:latest, wifidb/tileserver-gl-light:${{github.ref_name}}
 
