@@ -7,7 +7,7 @@
 
 Vector and raster maps with GL styles. Server side rendering by Mapbox GL Native. Map tile server for Mapbox GL JS, Android, iOS, Leaflet, OpenLayers, GIS via WMTS, etc.
 
-## Get Started
+## Getting Started with Node
 
 Make sure you have Node.js version **12** or above installed (up to node 16 has been tested)
 
@@ -36,7 +36,7 @@ tileserver-gl
 
 Alternatively, you can use the `tileserver-gl-light` package instead, which is pure javascript (does not have any native dependencies) and can run anywhere, but does not contain rasterization on the server side made with MapBox GL Native.
 
-## Using Docker
+## Getting Started with Docker
 
 An alternative to npm to start the packed software easier is to install [Docker](https://www.docker.com/) on your computer and then run from the tileserver-gl directory
 
