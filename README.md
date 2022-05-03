@@ -17,12 +17,13 @@ Install `@acalcutt/tileserver-gl` with server-side raster rendering of vector ti
 npm install -g @acalcutt/tileserver-gl
 ```
 
-Once installed, you can use it like the following example.
+Once installed, you can use it like the following examples.
 
 using a mbtiles file
 ```bash
 wget https://github.com/acalcutt/tileserver-gl/releases/download/test_data/zurich_switzerland.mbtiles
 tileserver-gl zurich_switzerland.mbtiles
+[in your browser, visit http://[server ip]:8080]
 ```
 
 using a config.json + style + mbtiles file
@@ -30,6 +31,7 @@ using a config.json + style + mbtiles file
 wget https://github.com/acalcutt/tileserver-gl/releases/download/test_data/test_data.zip
 unzip test_data.zip
 tileserver-gl
+[in your browser, visit http://[server ip]:8080]
 ```
 
 Alternatively, you can use the `tileserver-gl-light` package instead, which is pure javascript (does not have any native dependencies) and can run anywhere, but does not contain rasterization on the server side made with MapBox GL Native.
@@ -42,6 +44,7 @@ Example using a mbtiles file
 ```bash
 wget https://github.com/acalcutt/tileserver-gl/releases/download/test_data/zurich_switzerland.mbtiles
 docker run --rm -it -v $(pwd):/data -p 8080:80 wifidb/tileserver-gl zurich_switzerland.mbtiles
+[in your browser, visit http://[server ip]:8080]
 ```
 
 Example using a config.json + style + mbtiles file
@@ -49,6 +52,7 @@ Example using a config.json + style + mbtiles file
 wget https://github.com/acalcutt/tileserver-gl/releases/download/test_data/test_data.zip
 unzip test_data.zip
 docker run --rm -it -v $(pwd):/data -p 8080:80 wifidb/tileserver-gl
+[in your browser, visit http://[server ip]:8080]
 ```
 
 Example using a different path
