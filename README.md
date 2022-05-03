@@ -9,36 +9,50 @@ Vector and raster maps with GL styles. Server side rendering by Mapbox GL Native
 
 ## Get Started
 
-Make sure you have Node.js version **10** or above installed (up to node 16 has been tested)
+Make sure you have Node.js version **12** or above installed (up to node 16 has been tested)
 
-Install `tileserver-gl` with server-side raster rendering of vector tiles with npm
+Install `@acalcutt/tileserver-gl` with server-side raster rendering of vector tiles with npm
 
 ```bash
 npm install -g @acalcutt/tileserver-gl
 ```
 
-Now download test vector tiles
+Once installed, you can use it like the following example.
 
+using a mbtiles file
 ```bash
 wget https://github.com/acalcutt/tileserver-gl/releases/download/test_data/zurich_switzerland.mbtiles
+tileserver-gl zurich_switzerland.mbtiles
 ```
 
-Start `tileserver-gl` with the downloaded vector tiles.
-
+using a config.json + style + mbtiles file
 ```bash
-tileserver-gl zurich_switzerland.mbtiles
+wget https://github.com/acalcutt/tileserver-gl/releases/download/test_data/test_data.zip
+unzip test_data.zip
+tileserver-gl
 ```
 
 Alternatively, you can use the `tileserver-gl-light` package instead, which is pure javascript (does not have any native dependencies) and can run anywhere, but does not contain rasterization on the server side made with MapBox GL Native.
 
 ## Using Docker
 
-An alternative to npm to start the packed software easier is to install [Docker](https://www.docker.com/) on your computer and then run in the directory with the downloaded MBTiles the command:
+An alternative to npm to start the packed software easier is to install [Docker](https://www.docker.com/) on your computer and then run from the tileserver-gl directory
 
+Example using a mbtiles file
 ```bash
 wget https://github.com/acalcutt/tileserver-gl/releases/download/test_data/zurich_switzerland.mbtiles
+docker run --rm -it -v $(pwd):/data -p 8080:80 wifidb/tileserver-gl zurich_switzerland.mbtiles
+```
+
+Example using a config.json + style + mbtiles file
+```bash
+wget https://github.com/acalcutt/tileserver-gl/releases/download/test_data/test_data.zip
+unzip test_data.zip
 docker run --rm -it -v $(pwd):/data -p 8080:80 wifidb/tileserver-gl
 ```
+
+Example using a different path
+docker run --rm -it -v $(pwd):/data -p 8080:80 wifidb/tileserver-gl
 
 This will download and start a ready to use container on your computer and the maps are going to be available in webbrowser on localhost:8080.
 
