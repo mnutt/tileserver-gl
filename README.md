@@ -56,7 +56,11 @@ docker run --rm -it -v $(pwd):/data -p 8080:80 wifidb/tileserver-gl
 ```
 
 Example using a different path
-docker run --rm -it -v $(pwd):/data -p 8080:80 wifidb/tileserver-gl
+```bash
+docker run --rm -it -v /your/local/config/path:/data -p 8080:80 wifidb/tileserver-gl
+```
+replace '/your/local/config/path' with the path to your config file
+
 
 This will download and start a ready to use container on your computer and the maps are going to be available in webbrowser on localhost:8080.
 
