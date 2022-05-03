@@ -17,10 +17,10 @@ Install `tileserver-gl` with server-side raster rendering of vector tiles with n
 npm install -g @acalcutt/tileserver-gl
 ```
 
-Now download vector tiles from [OpenMapTiles](https://openmaptiles.org/downloads/).
+Now download test vector tiles
 
 ```bash
-curl -o zurich_switzerland.mbtiles https://[GET-YOUR-LINK]/extracts/zurich_switzerland.mbtiles
+wget https://github.com/acalcutt/tileserver-gl/releases/download/test_data/zurich_switzerland.mbtiles
 ```
 
 Start `tileserver-gl` with the downloaded vector tiles.
@@ -36,6 +36,7 @@ Alternatively, you can use the `tileserver-gl-light` package instead, which is p
 An alternative to npm to start the packed software easier is to install [Docker](https://www.docker.com/) on your computer and then run in the directory with the downloaded MBTiles the command:
 
 ```bash
+wget https://github.com/acalcutt/tileserver-gl/releases/download/test_data/zurich_switzerland.mbtiles
 docker run --rm -it -v $(pwd):/data -p 8080:80 wifidb/tileserver-gl
 ```
 
