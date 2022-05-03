@@ -70,7 +70,7 @@ jobs:
         with:
           context: .
           push: true
-          tags: wifidb/tileserver-gl:latest, wifidb/tileserver-gl:${{github.ref_name}}
+          tags: wifidb/tileserver-gl:latest, wifidb/tileserver-gl:${{steps.version-bump.outputs.newTag}}
       -
         name: Publish to Full Version NPM
         run: |
@@ -95,7 +95,7 @@ jobs:
           context: ./light
           file: ./light/Dockerfile
           push: true
-          tags: wifidb/tileserver-gl-light:latest, wifidb/tileserver-gl-light:${{github.ref_name}}
+          tags: wifidb/tileserver-gl-light:latest, wifidb/tileserver-gl-light:${{steps.version-bump.outputs.newTag}}
 
       -
         name: Publish to Light Version NPM
