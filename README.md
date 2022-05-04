@@ -1,8 +1,8 @@
-# TileServer GL
+# MapLibre TileServer GL
 [![Build Status](https://travis-ci.org/wifidb/tileserver-gl.svg?branch=master)](https://travis-ci.org/wifidb/tileserver-gl)
 [![Docker Hub](https://img.shields.io/badge/docker-hub-blue.svg)](https://hub.docker.com/r/wifidb/tileserver-gl/)
 
-Vector and raster maps with GL styles. Server side rendering by Maplibre GL Native. Map tile server for Maplibre GL JS, Android, iOS, Leaflet, OpenLayers, GIS via WMTS, etc.
+Vector and raster maps with GL styles. Server side rendering by MapLibre GL Native. Map tile server for MapLibre GL JS, Android, iOS, Leaflet, OpenLayers, GIS via WMTS, etc.
 
 ## Getting Started with Node
 
@@ -16,7 +16,7 @@ npm install -g @acalcutt/tileserver-gl
 
 Once installed, you can use it like the following examples.
 
-using a mbtiles file
+sing a mbtiles file
 ```bash
 wget https://github.com/acalcutt/tileserver-gl/releases/download/test_data/zurich_switzerland.mbtiles
 tileserver-gl zurich_switzerland.mbtiles
@@ -31,7 +31,7 @@ tileserver-gl
 [in your browser, visit http://[server ip]:8080]
 ```
 
-Alternatively, you can use the `@acalcutt/tileserver-gl-light` package instead, which is pure javascript (does not have any native dependencies) and can run anywhere, but does not contain rasterization on the server side made with Maplibre GL Native.
+Alternatively, you can use the `@acalcutt/tileserver-gl-light` npm package instead, which is pure javascript, does not have any native dependencies, and can run anywhere, but does not contain rasterization on the server side made with Maplibre GL Native.
 
 ## Getting Started with Docker
 
@@ -59,9 +59,7 @@ docker run --rm -it -v /your/local/config/path:/data -p 8080:80 wifidb/tileserve
 replace '/your/local/config/path' with the path to your config file
 
 
-Alternatively, you can use the `wifidb/tileserver-gl-light` image instead, which is pure javascript (does not have any native dependencies) and can run anywhere, but does not contain rasterization on the server side made with Maplibre GL Native.
-
-On laptop you can use [Docker Kitematic](https://kitematic.com/) and search "wifidb/tileserver-gl" and run it, then drop in the 'data' folder the MBTiles.
+Alternatively, you can use the `wifidb/tileserver-gl-light` docker image instead, which is pure javascript, does not have any native dependencies, and can run anywhere, but does not contain rasterization on the server side made with Maplibre GL Native.
 
 ## Documentation
 
