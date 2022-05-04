@@ -43,21 +43,6 @@
          selectThreshold: 5
       }));
     } else {
-	
-		function findValueOfProperty(obj, propertyName){
-			let reg = new RegExp(propertyName, "i"); // "i" to make it case insensitive
-			return Object.keys(obj).reduce((result, key) => {
-				if( reg.test(key) ) result.push(obj[key]);
-				return result;
-			}, []);
-		}
-
-		function decodeHTMLEntities(text) {
-		  var textArea = document.createElement('textarea');
-		  textArea.innerHTML = text;
-		  return textArea.value;
-		}
-
 		var map = L.map('map', { zoomControl: false });
 		new L.Control.Zoom({ position: 'topright' }).addTo(map);
 		
@@ -80,7 +65,7 @@
 						tile_url = value[0];
 						break;
 					  case "attribution":
-						tile_attribution = decodeHTMLEntities(value);
+						tile_attribution = value;
 						break;
 					  case "minzoom":
 						tile_minzoom = value;
@@ -89,26 +74,14 @@
 						tile_maxzoom = value;
 						break;
 					}
-					console.log(`${keyl}: ${value}`);
+					//console.log(`${keyl}: ${value}`);
 				}
-				
-				// Format Attributions. remove any entries that are whitespace. remove any entries that are substrings of another entry. first sort by length so that substrings come first
-				var attributions = tile_attribution.split("; ");
-				attributions = attributions.filter(e => String(e).trim());
-				attributions.sort((a, b) => a.length - b.length);
-				attributions = attributions.filter((attrib, i) => {
-					for (let j = i + 1; j < attributions.length; j++) {
-						if (attributions[j].indexOf(attrib) >= 0) { return false; }
-					}
-					return true;
-				});
-				attribHTML = attributions.join(' | ');
 
 				// Load TilJSON layer.
 				L.tileLayer(tile_url, {
 					minZoom: tile_minzoom,
 					maxZoom: tile_maxzoom,
-					attribution: attribHTML
+					attribution: tile_attribution
 				}).addTo(map);
 				
 				map.eachLayer(function(layer) {
