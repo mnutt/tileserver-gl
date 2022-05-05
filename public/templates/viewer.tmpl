@@ -31,7 +31,8 @@
       var map = new maplibregl.Map({
         container: 'map',
         style: '{{public_url}}styles/{{id}}/style.json{{&key_query}}',
-        hash: true
+        hash: true,
+        maplibreLogo: true
       });
       map.addControl(new maplibregl.NavigationControl({
          visualizePitch: true,
