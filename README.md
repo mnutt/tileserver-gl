@@ -16,10 +16,10 @@ npm install -g @acalcutt/tileserver-gl
 
 Once installed, you can use it like the following examples.
 
-sing a mbtiles file
+using a mbtiles file
 ```bash
 wget https://github.com/acalcutt/tileserver-gl/releases/download/test_data/zurich_switzerland.mbtiles
-tileserver-gl zurich_switzerland.mbtiles
+tileserver-gl --mbtiles zurich_switzerland.mbtiles
 [in your browser, visit http://[server ip]:8080]
 ```
 
@@ -40,7 +40,7 @@ An alternative to npm to start the packed software easier is to install [Docker]
 Example using a mbtiles file
 ```bash
 wget https://github.com/acalcutt/tileserver-gl/releases/download/test_data/zurich_switzerland.mbtiles
-docker run --rm -it -v $(pwd):/data -p 8080:80 wifidb/tileserver-gl zurich_switzerland.mbtiles
+docker run --rm -it -v $(pwd):/data -p 8080:80 wifidb/tileserver-gl --mbtiles zurich_switzerland.mbtiles
 [in your browser, visit http://[server ip]:8080]
 ```
 
