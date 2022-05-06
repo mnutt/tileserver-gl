@@ -24,6 +24,10 @@ if ! which -- "${1}"; then
 	# Wait exits immediately on signals which have traps set. Store return value and wait
 	# again for all jobs to actually complete before continuing.
 	wait $! || RETVAL=$?
+	while [ ${RETVAL} = 129 ] ; do
+	  # Refressh signal HUP received. Continue waiting for signals.
+	  wait $! || RETVAL=$?
+	done
 	wait
 	exit ${RETVAL}
 fi
