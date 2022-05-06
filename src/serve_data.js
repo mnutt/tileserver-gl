@@ -10,7 +10,7 @@ import MBTiles from '@mapbox/mbtiles';
 import Pbf from 'pbf';
 import VectorTile from '@mapbox/vector-tile';
 
-import * as utils from './utils.js';
+import { getTileUrls, fixTileJSONCenter } from './utils.js';
 
 export const serve_data = {
   init: (options, repo) => {
@@ -108,7 +108,7 @@ export const serve_data = {
         return res.sendStatus(404);
       }
       const info = clone(item.tileJSON);
-      info.tiles = utils.getTileUrls(req, info.tiles,
+      info.tiles = getTileUrls(req, info.tiles,
                                      `data/${req.params.id}`, info.format, item.publicUrl, {
                                        'pbf': options.pbfAlias
                                      });
@@ -150,7 +150,7 @@ export const serve_data = {
           delete tileJSON['scheme'];
 
           Object.assign(tileJSON, params.tilejson || {});
-          utils.fixTileJSONCenter(tileJSON);
+          fixTileJSONCenter(tileJSON);
 
           if (options.dataDecoratorFunc) {
             tileJSON = options.dataDecoratorFunc(id, 'tilejson', tileJSON);

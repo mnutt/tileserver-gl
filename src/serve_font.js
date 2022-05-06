@@ -4,7 +4,7 @@ import express from 'express';
 import fs from 'fs';
 import path from 'path';
 
-import * as utils from './utils.js';
+import { getFontsPbf } from './utils.js';
 
 export const serve_font = (options, allowedFonts) => {
   const app = express().disable('x-powered-by');
@@ -40,7 +40,7 @@ export const serve_font = (options, allowedFonts) => {
     const fontstack = decodeURI(req.params.fontstack);
     const range = req.params.range;
 
-    utils.getFontsPbf(options.serveAllFonts ? null : allowedFonts,
+    getFontsPbf(options.serveAllFonts ? null : allowedFonts,
       fontPath, fontstack, range, existingFonts).then(concated => {
         res.header('Content-type', 'application/x-protobuf');
         res.header('Last-Modified', lastModified);

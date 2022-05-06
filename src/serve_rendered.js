@@ -6,29 +6,23 @@ import path from 'path';
 import url from 'url';
 import util from 'util';
 import zlib from 'zlib';
-
-// sharp has to be required before node-canvas
-// see https://github.com/lovell/sharp/issues/371
-import sharp from 'sharp';
-
+import sharp from 'sharp'; // sharp has to be required before node-canvas. see https://github.com/lovell/sharp/issues/371
 import pkg from 'canvas';
-const { createCanvas } = pkg;
-
 import clone from 'clone';
 import Color from 'color';
 import express from 'express';
 import SphericalMercator from "@mapbox/sphericalmercator";
-const mercator = new SphericalMercator();
 import mlgl from '@acalcutt/maplibre-gl-native';
 import MBTiles from '@mapbox/mbtiles';
 import proj4 from 'proj4';
 import request from 'request';
-
-import * as utils from './utils.js';
+import { getFontsPbf, getTileUrls, fixTileJSONCenter } from './utils.js';
 
 const FLOAT_PATTERN = '[+-]?(?:\\d+|\\d+\.?\\d+)';
 const httpTester = /^(http(s)?:)?\/\//;
 
+const { createCanvas } = pkg;
+const mercator = new SphericalMercator();
 const getScale = scale => (scale || '@1x').slice(1, 2) | 0;
 
 mlgl.on('message', e => {
@@ -558,7 +552,7 @@ export const serve_rendered = {
         return res.sendStatus(404);
       }
       const info = clone(item.tileJSON);
-      info.tiles = utils.getTileUrls(req, info.tiles,
+      info.tiles = getTileUrls(req, info.tiles,
         `styles/${req.params.id}`, info.format, item.publicUrl);
       return res.send(info);
     });
@@ -590,7 +584,7 @@ export const serve_rendered = {
               const parts = req.url.split('/');
               const fontstack = unescape(parts[2]);
               const range = parts[3].split('.')[0];
-              utils.getFontsPbf(
+              getFontsPbf(
                 null, options.paths[protocol], fontstack, range, existingFonts
               ).then(concated => {
                 callback(null, { data: concated });
@@ -723,7 +717,7 @@ export const serve_rendered = {
     const attributionOverride = params.tilejson && params.tilejson.attribution;
     Object.assign(tileJSON, params.tilejson || {});
     tileJSON.tiles = params.domains || options.domains;
-    utils.fixTileJSONCenter(tileJSON);
+    fixTileJSONCenter(tileJSON);
 
     repo[id] = {
       tileJSON,

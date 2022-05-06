@@ -7,7 +7,7 @@ import clone from 'clone';
 import express from 'express';
 import {validate} from '@maplibre/maplibre-gl-style-spec';
 
-import * as utils from './utils.js';
+import { getPublicUrl } from './utils.js';
 
 const httpTester = /^(http(s)?:)?\/\//;
 
@@ -24,7 +24,7 @@ const fixUrl = (req, url, publicUrl, opt_nokey) => {
     query = `?${queryParams.join('&')}`;
   }
   return url.replace(
-    'local://', utils.getPublicUrl(publicUrl, req)) + query;
+    'local://', getPublicUrl(publicUrl, req)) + query;
 };
 
 export const serve_style = {
