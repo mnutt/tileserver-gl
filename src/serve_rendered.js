@@ -11,18 +11,20 @@ import zlib from 'zlib';
 // see https://github.com/lovell/sharp/issues/371
 import sharp from 'sharp';
 
-import { createCanvas } from 'canvas';
+import pkg from 'canvas';
+const { createCanvas } = pkg;
 
 import clone from 'clone';
 import Color from 'color';
 import express from 'express';
-const mercator = new (require('@mapbox/sphericalmercator'))();
-const mlgl = require('@acalcutt/maplibre-gl-native');
-const MBTiles = require('@mapbox/mbtiles');
+import SphericalMercator from "@mapbox/sphericalmercator";
+const mercator = new SphericalMercator();
+import mlgl from '@acalcutt/maplibre-gl-native';
+import MBTiles from '@mapbox/mbtiles';
 import proj4 from 'proj4';
 import request from 'request';
 
-import utils from './utils';
+import * as utils from './utils.js';
 
 const FLOAT_PATTERN = '[+-]?(?:\\d+|\\d+\.?\\d+)';
 const httpTester = /^(http(s)?:)?\/\//;
@@ -197,7 +199,7 @@ const calcZForBBox = (bbox, w, h, query) => {
 const existingFonts = {};
 let maxScaleFactor = 2;
 
-module.exports = {
+export const serve_rendered = {
   init: (options, repo) => {
     const fontListingPromise = new Promise((resolve, reject) => {
       fs.readdir(options.paths.fonts, (err, files) => {

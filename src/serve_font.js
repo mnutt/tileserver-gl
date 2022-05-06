@@ -4,9 +4,9 @@ import express from 'express';
 import fs from 'fs';
 import path from 'path';
 
-import * as utils from './utils.mjs';
+import * as utils from './utils.js';
 
-module.exports = (options, allowedFonts) => {
+export const serve_font = (options, allowedFonts) => {
   const app = express().disable('x-powered-by');
 
   const lastModified = new Date().toUTCString();

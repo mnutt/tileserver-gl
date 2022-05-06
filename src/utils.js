@@ -3,14 +3,13 @@
 import path from 'path';
 import fs from 'fs';
 
-import clone from './node_modules/clone/clone.mjs';
-import glyphCompose from './node_modules/@mapbox/glyph-pbf-composite/index.mjs';
+import clone from 'clone';
+import glyphCompose from '@mapbox/glyph-pbf-composite';
 
 
-const getPublicUrl = (publicUrl, req) => publicUrl || `${req.protocol}://${req.headers.host}/`;
-export getPublicUrl;
+export const getPublicUrl = (publicUrl, req) => publicUrl || `${req.protocol}://${req.headers.host}/`;
 
-const getTileUrls = (req, domains, path, format, publicUrl, aliases) => {
+export const getTileUrls = (req, domains, path, format, publicUrl, aliases) => {
   if (domains) {
     if (domains.constructor === String && domains.length > 0) {
       domains = domains.split(',');
@@ -62,9 +61,8 @@ const getTileUrls = (req, domains, path, format, publicUrl, aliases) => {
 
   return uris;
 };
-export getTileUrls;
 
-const fixTileJSONCenter = tileJSON => {
+export const fixTileJSONCenter = tileJSON => {
   if (tileJSON.bounds && !tileJSON.center) {
     const fitWidth = 1024;
     const tiles = fitWidth / 256;
@@ -78,7 +76,6 @@ const fixTileJSONCenter = tileJSON => {
     ];
   }
 };
-export fixTileJSONCenter;
 
 const getFontPbf = (allowedFonts, fontPath, name, range, fallbacks) => new Promise((resolve, reject) => {
   if (!allowedFonts || (allowedFonts[name] && fallbacks)) {
@@ -120,7 +117,7 @@ const getFontPbf = (allowedFonts, fontPath, name, range, fallbacks) => new Promi
   }
 });
 
-const getFontsPbf = (allowedFonts, fontPath, names, range, fallbacks) => {
+export const getFontsPbf = (allowedFonts, fontPath, names, range, fallbacks) => {
   const fonts = names.split(',');
   const queue = [];
   for (const font of fonts) {
@@ -131,4 +128,3 @@ const getFontsPbf = (allowedFonts, fontPath, names, range, fallbacks) => {
 
   return Promise.all(queue).then(values => glyphCompose.combine(values));
 };
-export getFontsPbf;

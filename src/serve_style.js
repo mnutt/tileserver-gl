@@ -7,7 +7,7 @@ import clone from 'clone';
 import express from 'express';
 import {validate} from '@maplibre/maplibre-gl-style-spec';
 
-import * as utils from './utils.mjs';
+import * as utils from './utils.js';
 
 const httpTester = /^(http(s)?:)?\/\//;
 
@@ -27,7 +27,7 @@ const fixUrl = (req, url, publicUrl, opt_nokey) => {
     'local://', utils.getPublicUrl(publicUrl, req)) + query;
 };
 
-module.exports = {
+export const serve_style = {
   init: (options, repo) => {
     const app = express().disable('x-powered-by');
 

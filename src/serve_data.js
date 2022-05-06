@@ -6,13 +6,13 @@ import zlib from 'zlib';
 
 import clone from 'clone';
 import express from 'express';
-const MBTiles = require('@mapbox/mbtiles');
+import MBTiles from '@mapbox/mbtiles';
 import Pbf from 'pbf';
-const VectorTile = require('@mapbox/vector-tile').VectorTile;
+import VectorTile from '@mapbox/vector-tile';
 
-import * as utils from './utils.mjs';
+import * as utils from './utils.js';
 
-module.exports = {
+export const serve_data = {
   init: (options, repo) => {
     const app = express().disable('x-powered-by');
 

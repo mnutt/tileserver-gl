@@ -1,8 +1,9 @@
 #!/usr/bin/env node
 'use strict';
 
+import os from 'os';
 process.env.UV_THREADPOOL_SIZE =
-    Math.ceil(Math.max(4, require('os').cpus().length * 1.5));
+    Math.ceil(Math.max(4, os.cpus().length * 1.5));
 
 import fs from 'fs';
 import path from 'path';
@@ -13,23 +14,28 @@ import cors from 'cors';
 import enableShutdown from 'http-shutdown';
 import express from 'express';
 import handlebars from 'handlebars';
-const mercator = new (require('@mapbox/sphericalmercator'))();
+import SphericalMercator from "@mapbox/sphericalmercator";
+const mercator = new SphericalMercator();
 import morgan from 'morgan';
+import { serve_rendered } from './serve_rendered.js';
+import { serve_data } from './serve_data.js';
+import { serve_style } from './serve_style.js';
+import { serve_font } from './serve_font.js';
+import { getTileUrls, getPublicUrl } from './utils.js';
 
+import { fileURLToPath } from 'url';
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 const packageJson = JSON.parse(fs.readFileSync('package.json', 'utf8'))
-import * as serve_font from './serve_font.js';
-import * as serve_style from './serve_style.js';
-import * as serve_data from './serve_data.js';
-import * as utils from './utils.mjs';
 
-let serve_rendered = null;
+//let serve_rendered = null;
 const isLight = packageJson.name.slice(-6) === '-light';
-if (!isLight) {
+//if (!isLight) {
   // do not require `serve_rendered` in the light package
-  serve_rendered = require('./serve_rendered');
-}
+//  serve_rendered = rendered;
+//}
 
-function start(opts) {
+export function start(opts) {
   console.log('Starting server');
 
   const app = express().disable('x-powered-by'),
@@ -250,7 +256,7 @@ function start(opts) {
         version: styleJSON.version,
         name: styleJSON.name,
         id: id,
-        url: `${utils.getPublicUrl(opts.publicUrl, req)}styles/${id}/style.json${query}`
+        url: `${getPublicUrl(opts.publicUrl, req)}styles/${id}/style.json${query}`
       });
     }
     res.send(result);
@@ -265,7 +271,7 @@ function start(opts) {
       } else {
         path = `${type}/${id}`;
       }
-      info.tiles = utils.getTileUrls(req, info.tiles, path, info.format, opts.publicUrl, {
+      info.tiles = getTileUrls(req, info.tiles, path, info.format, opts.publicUrl, {
         'pbf': options.pbfAlias
       });
       arr.push(info);
@@ -345,7 +351,7 @@ function start(opts) {
           style.thumbnail = `${center[2]}/${Math.floor(centerPx[0] / 256)}/${Math.floor(centerPx[1] / 256)}.png`;
         }
 
-        style.xyz_link = utils.getTileUrls(
+        style.xyz_link = getTileUrls(
           req, style.serving_rendered.tileJSON.tiles,
           `styles/${id}`, style.serving_rendered.tileJSON.format, opts.publicUrl)[0];
       }
@@ -365,7 +371,7 @@ function start(opts) {
           data_.thumbnail = `${center[2]}/${Math.floor(centerPx[0] / 256)}/${Math.floor(centerPx[1] / 256)}.${data_.tileJSON.format}`;
         }
 
-        data_.xyz_link = utils.getTileUrls(
+        data_.xyz_link = getTileUrls(
           req, tilejson.tiles, `data/${id}`, tilejson.format, opts.publicUrl, {
             'pbf': options.pbfAlias
           })[0];
@@ -465,7 +471,7 @@ function start(opts) {
   };
 }
 
-module.exports = opts => {
+export const exports = opts => {
   const running = start(opts);
 
   running.startupPromise.catch(err => {
