@@ -35,7 +35,7 @@ const isLight = packageJson.name.slice(-6) === '-light';
 //  serve_rendered = rendered;
 //}
 
-export function start(opts) {
+export function server(opts) {
   console.log('Starting server');
 
   const app = express().disable('x-powered-by'),
@@ -62,7 +62,7 @@ export function start(opts) {
   if (opts.configPath) {
     configPath = path.resolve(opts.configPath);
     try {
-      config = clone(require(configPath));
+      config = clone(fs.readFileSync(configPath, 'utf8'));
     } catch (e) {
       console.log('ERROR: Config file not found or invalid!');
       console.log('       See README.md for instructions and sample data.');

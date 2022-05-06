@@ -6,7 +6,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import request from 'request';
-import { start } from './server.js';
+import { server } from './server.js';
 
 import MBTiles from '@mapbox/mbtiles';
 
@@ -81,7 +81,7 @@ const startServer = (configPath, config) => {
   if (publicUrl && publicUrl.lastIndexOf('/') !== publicUrl.length - 1) {
     publicUrl += '/';
   }
-  return start({
+  return server({
     configPath: configPath,
     config: config,
     bind: options.bind,
