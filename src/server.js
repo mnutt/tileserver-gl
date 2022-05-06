@@ -62,7 +62,7 @@ export function server(opts) {
   if (opts.configPath) {
     configPath = path.resolve(opts.configPath);
     try {
-      config = clone(fs.readFileSync(configPath, 'utf8'));
+      config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
     } catch (e) {
       console.log('ERROR: Config file not found or invalid!');
       console.log('       See README.md for instructions and sample data.');
