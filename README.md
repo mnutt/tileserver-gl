@@ -61,6 +61,23 @@ replace '/your/local/config/path' with the path to your config file
 
 Alternatively, you can use the `wifidb/tileserver-gl-light` docker image instead, which is pure javascript, does not have any native dependencies, and can run anywhere, but does not contain rasterization on the server side made with Maplibre GL Native.
 
+## Getting Started with Linux cli
+
+Test from command line
+```bash
+wget -O test_data.zip https://github.com/acalcutt/tileserver-gl/releases/download/test_data/test_data.zip
+unzip -q test_data.zip -d test_data
+xvfb-run --server-args="-screen 0 1024x768x24" npm test
+```
+
+Run from command line
+```bash
+xvfb-run --server-args="-screen 0 1024x768x24" node .
+```
+
+
+ 
+
 ## Documentation
 
 You can read full documentation of this project at https://tileserver.readthedocs.io/.
