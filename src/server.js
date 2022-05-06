@@ -4,23 +4,23 @@
 process.env.UV_THREADPOOL_SIZE =
     Math.ceil(Math.max(4, require('os').cpus().length * 1.5));
 
-const fs = require('fs');
-const path = require('path');
+import fs from 'fs';
+import path from 'path';
 
-const chokidar = require('chokidar');
-const clone = require('clone');
-const cors = require('cors');
-const enableShutdown = require('http-shutdown');
-const express = require('express');
-const handlebars = require('handlebars');
+import chokidar from 'chokidar';
+import clone from 'clone';
+import cors from 'cors';
+import enableShutdown from 'http-shutdown';
+import express from 'express';
+import handlebars from 'handlebars';
 const mercator = new (require('@mapbox/sphericalmercator'))();
-const morgan = require('morgan');
+import morgan from 'morgan';
 
-const packageJson = require('../package');
-const serve_font = require('./serve_font');
-const serve_style = require('./serve_style');
-const serve_data = require('./serve_data');
-const utils = require('./utils');
+const packageJson = JSON.parse(fs.readFileSync('package.json', 'utf8'))
+import * as serve_font from './serve_font.js';
+import * as serve_style from './serve_style.js';
+import * as serve_data from './serve_data.js';
+import * as utils from './utils.mjs';
 
 let serve_rendered = null;
 const isLight = packageJson.name.slice(-6) === '-light';

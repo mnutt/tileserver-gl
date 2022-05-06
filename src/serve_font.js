@@ -1,10 +1,10 @@
 'use strict';
 
-const express = require('express');
-const fs = require('fs');
-const path = require('path');
+import express from 'express';
+import fs from 'fs';
+import path from 'path';
 
-const utils = require('./utils');
+import * as utils from './utils.mjs';
 
 module.exports = (options, allowedFonts) => {
   const app = express().disable('x-powered-by');

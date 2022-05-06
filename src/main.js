@@ -2,22 +2,26 @@
 
 'use strict';
 
-require = require('esm')(module);
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import request from 'request';
+import * as server from './server.js';
 
-const fs = require('fs');
-const path = require('path');
-const request = require('request');
+import MBTiles from '@mapbox/mbtiles';
 
-const MBTiles = require('@mapbox/mbtiles');
-
-const packageJson = require('../package');
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const packageJson = JSON.parse(fs.readFileSync('package.json', 'utf8'))
 
 const args = process.argv;
 if (args.length >= 3 && args[2][0] !== '-') {
   args.splice(2, 0, '--mbtiles');
 }
 
-const opts = require('commander')
+import { Command } from 'commander';
+const program = new Command();
+program 
   .description('tileserver-gl startup options')
   .usage('tileserver-gl [mbtiles] [options]')
   .option(
@@ -67,26 +71,26 @@ const opts = require('commander')
   .version(
     packageJson.version,
     '-v, --version'
-  )
-  .parse(args);
-
+  );
+program.parse(process.argv);
+const options = program.opts();
 console.log(`Starting ${packageJson.name} v${packageJson.version}`);
 
 const startServer = (configPath, config) => {
-  let publicUrl = opts.public_url;
+  let publicUrl = options.public_url;
   if (publicUrl && publicUrl.lastIndexOf('/') !== publicUrl.length - 1) {
     publicUrl += '/';
   }
-  return require('./server')({
+  return S({
     configPath: configPath,
     config: config,
-    bind: opts.bind,
-    port: opts.port,
-    cors: opts.cors,
-    verbose: opts.verbose,
-    silent: opts.silent,
-    logFile: opts.log_file,
-    logFormat: opts.log_format,
+    bind: options.bind,
+    port: options.port,
+    cors: options.cors,
+    verbose: options.verbose,
+    silent: options.silent,
+    logFile: options.log_file,
+    logFormat: options.log_format,
     publicUrl: publicUrl
   });
 };
@@ -164,7 +168,7 @@ const startWithMBTiles = (mbtilesFile) => {
         };
       }
 
-      if (opts.verbose) {
+      if (options.verbose) {
         console.log(JSON.stringify(config, undefined, 2));
       } else {
         console.log('Run with --verbose to see the config file here.');
@@ -175,9 +179,9 @@ const startWithMBTiles = (mbtilesFile) => {
   });
 };
 
-fs.stat(path.resolve(opts.config), (err, stats) => {
+fs.stat(path.resolve(options.config), (err, stats) => {
   if (err || !stats.isFile() || stats.size === 0) {
-    let mbtiles = opts.mbtiles;
+    let mbtiles = options.mbtiles;
     if (!mbtiles) {
       // try to find in the cwd
       const files = fs.readdirSync(process.cwd());
@@ -207,7 +211,7 @@ fs.stat(path.resolve(opts.config), (err, stats) => {
       return startWithMBTiles(mbtiles);
     }
   } else {
-    console.log(`Using specified config file from ${opts.config}`);
-    return startServer(opts.config, null);
+    console.log(`Using specified config file from ${options.config}`);
+    return startServer(options.config, null);
   }
 });

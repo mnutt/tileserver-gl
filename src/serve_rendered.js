@@ -1,28 +1,28 @@
 'use strict';
 
-const advancedPool = require('advanced-pool');
-const fs = require('fs');
-const path = require('path');
-const url = require('url');
-const util = require('util');
-const zlib = require('zlib');
+import advancedPool from 'advanced-pool';
+import fs from 'fs';
+import path from 'path';
+import url from 'url';
+import util from 'util';
+import zlib from 'zlib';
 
 // sharp has to be required before node-canvas
 // see https://github.com/lovell/sharp/issues/371
-const sharp = require('sharp');
+import sharp from 'sharp';
 
-const { createCanvas } = require('canvas');
+import { createCanvas } from 'canvas';
 
-const clone = require('clone');
-const Color = require('color');
-const express = require('express');
+import clone from 'clone';
+import Color from 'color';
+import express from 'express';
 const mercator = new (require('@mapbox/sphericalmercator'))();
 const mlgl = require('@acalcutt/maplibre-gl-native');
 const MBTiles = require('@mapbox/mbtiles');
-const proj4 = require('proj4');
-const request = require('request');
+import proj4 from 'proj4';
+import request from 'request';
 
-const utils = require('./utils');
+import utils from './utils';
 
 const FLOAT_PATTERN = '[+-]?(?:\\d+|\\d+\.?\\d+)';
 const httpTester = /^(http(s)?:)?\/\//;

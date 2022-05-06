@@ -1,13 +1,13 @@
 'use strict';
 
-const path = require('path');
-const fs = require('fs');
+import path from 'path';
+import fs from 'fs';
 
-const clone = require('clone');
-const express = require('express');
+import clone from 'clone';
+import express from 'express';
 import {validate} from '@maplibre/maplibre-gl-style-spec';
 
-const utils = require('./utils');
+import * as utils from './utils.mjs';
 
 const httpTester = /^(http(s)?:)?\/\//;
 

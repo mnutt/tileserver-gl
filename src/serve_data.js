@@ -1,16 +1,16 @@
 'use strict';
 
-const fs = require('fs');
-const path = require('path');
-const zlib = require('zlib');
+import fs from 'fs';
+import path from 'path';
+import zlib from 'zlib';
 
-const clone = require('clone');
-const express = require('express');
+import clone from 'clone';
+import express from 'express';
 const MBTiles = require('@mapbox/mbtiles');
-const Pbf = require('pbf');
+import Pbf from 'pbf';
 const VectorTile = require('@mapbox/vector-tile').VectorTile;
 
-const utils = require('./utils');
+import * as utils from './utils.mjs';
 
 module.exports = {
   init: (options, repo) => {
