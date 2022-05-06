@@ -14,7 +14,7 @@
     "node": ">=12"
   },
   "scripts": {
-    "test": "mocha test/**.js --timeout 10000",
+    "test": "mocha --loader=ts-node/esm test/**.js --timeout 10000",
     "docker": "docker build -f Dockerfile . && docker run --rm -i -p 8080:80 $(docker build -q .)"
   },
   "dependencies": {
@@ -44,7 +44,7 @@
   },
   "devDependencies": {
     "mocha": "^9.2.2",
-    "should": "^13.2.3",
+    "chai": "4.3.6",
     "supertest": "^6.2.2"
   }
 }
