@@ -17,7 +17,6 @@ import handlebars from 'handlebars';
 import SphericalMercator from "@mapbox/sphericalmercator";
 const mercator = new SphericalMercator();
 import morgan from 'morgan';
-import { serve_rendered } from './serve_rendered.js';
 import { serve_data } from './serve_data.js';
 import { serve_style } from './serve_style.js';
 import { serve_font } from './serve_font.js';
@@ -28,12 +27,8 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const packageJson = JSON.parse(fs.readFileSync('package.json', 'utf8'))
 
-//let serve_rendered = null;
-const isLight = packageJson.name.slice(-6) === '-light';
-//if (!isLight) {
-  // do not require `serve_rendered` in the light package
-//  serve_rendered = rendered;
-//}
+const isLight = packageJson.name.slice(-6) !== '-light';
+const serve_rendered = (await import(`${!isLight ? `./serve_rendered.js` : `./serve_light.js`}`)).serve_rendered
 
 export function server(opts) {
   console.log('Starting server');
@@ -112,7 +107,7 @@ export function server(opts) {
 
   app.use('/data/', serve_data.init(options, serving.data));
   app.use('/styles/', serve_style.init(options, serving.styles));
-  if (serve_rendered) {
+  if (!isLight) {
     startupPromises.push(
       serve_rendered.init(options, serving.rendered)
         .then(sub => {
@@ -160,7 +155,7 @@ export function server(opts) {
         });
     }
     if (success && item.serve_rendered !== false) {
-      if (serve_rendered) {
+      if (!isLight) {
         startupPromises.push(serve_rendered.add(options, serving.rendered, item, id, opts.publicUrl,
           mbtiles => {
             let mbtilesFile;
@@ -233,7 +228,7 @@ export function server(opts) {
           console.log(`Style "${id}" changed, updating...`);
 
           serve_style.remove(serving.styles, id);
-          if (serve_rendered) {
+          if (!isLight) {
             serve_rendered.remove(serving.rendered, id);
           }
 
