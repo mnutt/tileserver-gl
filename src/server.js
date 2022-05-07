@@ -25,7 +25,7 @@ import {getTileUrls, getPublicUrl} from './utils.js';
 import {fileURLToPath} from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const packageJson = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+const packageJson = JSON.parse(fs.readFileSync(__dirname + '/../package.json', 'utf8'));
 
 const isLight = packageJson.name.slice(-6) === '-light';
 const serve_rendered = (await import(`${!isLight ? `./serve_rendered.js` : `./serve_light.js`}`)).serve_rendered;

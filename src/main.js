@@ -12,7 +12,7 @@ import MBTiles from '@mapbox/mbtiles';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const packageJson = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+const packageJson = JSON.parse(fs.readFileSync(__dirname + '/../package.json', 'utf8'));
 
 const args = process.argv;
 if (args.length >= 3 && args[2][0] !== '-') {
