@@ -7,7 +7,7 @@ import clone from 'clone';
 import express from 'express';
 import {validate} from '@maplibre/maplibre-gl-style-spec';
 
-import { getPublicUrl } from './utils.js';
+import {getPublicUrl} from './utils.js';
 
 const httpTester = /^(http(s)?:)?\/\//;
 
@@ -24,7 +24,7 @@ const fixUrl = (req, url, publicUrl, opt_nokey) => {
     query = `?${queryParams.join('&')}`;
   }
   return url.replace(
-    'local://', getPublicUrl(publicUrl, req)) + query;
+      'local://', getPublicUrl(publicUrl, req)) + query;
 };
 
 export const serve_style = {
@@ -56,8 +56,8 @@ export const serve_style = {
       if (!item || !item.spritePath) {
         return res.sendStatus(404);
       }
-      const scale = req.params.scale,
-        format = req.params.format;
+      const scale = req.params.scale;
+      const format = req.params.format;
       const filename = `${item.spritePath + (scale || '')}.${format}`;
       return fs.readFile(filename, (err, data) => {
         if (err) {
@@ -87,7 +87,7 @@ export const serve_style = {
       return false;
     }
 
-    let validationErrors = validate(styleFileData);
+    const validationErrors = validate(styleFileData);
     if (validationErrors.length > 0) {
       console.log(`The file "${params.style}" is not valid a valid style file:`);
       for (const err of validationErrors) {
@@ -95,7 +95,7 @@ export const serve_style = {
       }
       return false;
     }
-    let styleJSON = JSON.parse(styleFileData);
+    const styleJSON = JSON.parse(styleFileData);
 
     for (const name of Object.keys(styleJSON.sources)) {
       const source = styleJSON.sources[name];
@@ -120,7 +120,7 @@ export const serve_style = {
       }
     }
 
-    for (let obj of styleJSON.layers) {
+    for (const obj of styleJSON.layers) {
       if (obj['type'] === 'symbol') {
         const fonts = (obj['layout'] || {})['text-font'];
         if (fonts && fonts.length) {
@@ -136,9 +136,9 @@ export const serve_style = {
 
     if (styleJSON.sprite && !httpTester.test(styleJSON.sprite)) {
       spritePath = path.join(options.paths.sprites,
-        styleJSON.sprite
-          .replace('{style}', path.basename(styleFile, '.json'))
-          .replace('{styleJsonFolder}', path.relative(options.paths.sprites, path.dirname(styleFile)))
+          styleJSON.sprite
+              .replace('{style}', path.basename(styleFile, '.json'))
+              .replace('{styleJsonFolder}', path.relative(options.paths.sprites, path.dirname(styleFile))),
       );
       styleJSON.sprite = `local://styles/${id}/sprite`;
     }
@@ -150,9 +150,9 @@ export const serve_style = {
       styleJSON,
       spritePath,
       publicUrl,
-      name: styleJSON.name
+      name: styleJSON.name,
     };
 
     return true;
-  }
+  },
 };

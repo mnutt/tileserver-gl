@@ -14,32 +14,32 @@ import cors from 'cors';
 import enableShutdown from 'http-shutdown';
 import express from 'express';
 import handlebars from 'handlebars';
-import SphericalMercator from "@mapbox/sphericalmercator";
+import SphericalMercator from '@mapbox/sphericalmercator';
 const mercator = new SphericalMercator();
 import morgan from 'morgan';
-import { serve_data } from './serve_data.js';
-import { serve_style } from './serve_style.js';
-import { serve_font } from './serve_font.js';
-import { getTileUrls, getPublicUrl } from './utils.js';
+import {serve_data} from './serve_data.js';
+import {serve_style} from './serve_style.js';
+import {serve_font} from './serve_font.js';
+import {getTileUrls, getPublicUrl} from './utils.js';
 
-import { fileURLToPath } from 'url';
+import {fileURLToPath} from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const packageJson = JSON.parse(fs.readFileSync('package.json', 'utf8'))
+const packageJson = JSON.parse(fs.readFileSync('package.json', 'utf8'));
 
-const isLight = packageJson.name.slice(-6) !== '-light';
-const serve_rendered = (await import(`${!isLight ? `./serve_rendered.js` : `./serve_light.js`}`)).serve_rendered
+const isLight = packageJson.name.slice(-6) === '-light';
+const serve_rendered = (await import(`${!isLight ? `./serve_rendered.js` : `./serve_light.js`}`)).serve_rendered;
 
 export function server(opts) {
   console.log('Starting server');
 
-  const app = express().disable('x-powered-by'),
-    serving = {
-      styles: {},
-      rendered: {},
-      data: {},
-      fonts: {}
-    };
+  const app = express().disable('x-powered-by');
+  const serving = {
+    styles: {},
+    rendered: {},
+    data: {},
+    fonts: {},
+  };
 
   app.enable('trust proxy');
 
@@ -47,8 +47,8 @@ export function server(opts) {
     const defaultLogFormat = process.env.NODE_ENV === 'production' ? 'tiny' : 'dev';
     const logFormat = opts.logFormat || defaultLogFormat;
     app.use(morgan(logFormat, {
-      stream: opts.logFile ? fs.createWriteStream(opts.logFile, { flags: 'a' }) : process.stdout,
-      skip: (req, res) => opts.silent && (res.statusCode === 200 || res.statusCode === 304)
+      stream: opts.logFile ? fs.createWriteStream(opts.logFile, {flags: 'a'}) : process.stdout,
+      skip: (req, res) => opts.silent && (res.statusCode === 200 || res.statusCode === 304),
     }));
   }
 
@@ -82,7 +82,7 @@ export function server(opts) {
 
   const startupPromises = [];
 
-  const checkPath = type => {
+  const checkPath = (type) => {
     if (!fs.existsSync(paths[type])) {
       console.error(`The specified path for "${type}" does not exist (${paths[type]}).`);
       process.exit(1);
@@ -109,63 +109,63 @@ export function server(opts) {
   app.use('/styles/', serve_style.init(options, serving.styles));
   if (!isLight) {
     startupPromises.push(
-      serve_rendered.init(options, serving.rendered)
-        .then(sub => {
-          app.use('/styles/', sub);
-        })
+        serve_rendered.init(options, serving.rendered)
+            .then((sub) => {
+              app.use('/styles/', sub);
+            }),
     );
   }
 
-  let addStyle = (id, item, allowMoreData, reportFonts) => {
+  const addStyle = (id, item, allowMoreData, reportFonts) => {
     let success = true;
     if (item.serve_data !== false) {
-        success = serve_style.add(options, serving.styles, item, id, opts.publicUrl,
-        (mbtiles, fromData) => {
-          let dataItemId;
-          for (const id of Object.keys(data)) {
-            if (fromData) {
-              if (id === mbtiles) {
-                dataItemId = id;
-              }
-            } else {
-              if (data[id].mbtiles === mbtiles) {
-                dataItemId = id;
+      success = serve_style.add(options, serving.styles, item, id, opts.publicUrl,
+          (mbtiles, fromData) => {
+            let dataItemId;
+            for (const id of Object.keys(data)) {
+              if (fromData) {
+                if (id === mbtiles) {
+                  dataItemId = id;
+                }
+              } else {
+                if (data[id].mbtiles === mbtiles) {
+                  dataItemId = id;
+                }
               }
             }
-          }
-          if (dataItemId) { // mbtiles exist in the data config
-            return dataItemId;
-          } else {
-            if (fromData || !allowMoreData) {
-              console.log(`ERROR: style "${item.style}" using unknown mbtiles "${mbtiles}"! Skipping...`);
-              return undefined;
+            if (dataItemId) { // mbtiles exist in the data config
+              return dataItemId;
             } else {
-              let id = mbtiles.substr(0, mbtiles.lastIndexOf('.')) || mbtiles;
-              while (data[id]) id += '_';
-              data[id] = {
-                'mbtiles': mbtiles
-              };
-              return id;
+              if (fromData || !allowMoreData) {
+                console.log(`ERROR: style "${item.style}" using unknown mbtiles "${mbtiles}"! Skipping...`);
+                return undefined;
+              } else {
+                let id = mbtiles.substr(0, mbtiles.lastIndexOf('.')) || mbtiles;
+                while (data[id]) id += '_';
+                data[id] = {
+                  'mbtiles': mbtiles,
+                };
+                return id;
+              }
             }
-          }
-        }, font => {
-          if (reportFonts) {
-            serving.fonts[font] = true;
-          }
-        });
+          }, (font) => {
+            if (reportFonts) {
+              serving.fonts[font] = true;
+            }
+          });
     }
     if (success && item.serve_rendered !== false) {
       if (!isLight) {
         startupPromises.push(serve_rendered.add(options, serving.rendered, item, id, opts.publicUrl,
-          mbtiles => {
-            let mbtilesFile;
-            for (const id of Object.keys(data)) {
-              if (id === mbtiles) {
-                mbtilesFile = data[id].mbtiles;
+            (mbtiles) => {
+              let mbtilesFile;
+              for (const id of Object.keys(data)) {
+                if (id === mbtiles) {
+                  mbtilesFile = data[id].mbtiles;
+                }
               }
-            }
-            return mbtilesFile;
-          }
+              return mbtilesFile;
+            },
         ));
       } else {
         item.serve_rendered = false;
@@ -184,9 +184,9 @@ export function server(opts) {
   }
 
   startupPromises.push(
-    serve_font(options, serving.fonts).then(sub => {
-      app.use('/', sub);
-    })
+      serve_font(options, serving.fonts).then((sub) => {
+        app.use('/', sub);
+      }),
   );
 
   for (const id of Object.keys(data)) {
@@ -197,7 +197,7 @@ export function server(opts) {
     }
 
     startupPromises.push(
-      serve_data.add(options, serving.data, item, id, opts.publicUrl)
+        serve_data.add(options, serving.data, item, id, opts.publicUrl),
     );
   }
 
@@ -209,9 +209,9 @@ export function server(opts) {
       for (const file of files) {
         if (file.isFile() &&
             path.extname(file.name).toLowerCase() == '.json') {
-          let id = path.basename(file.name, '.json');
-          let item = {
-            style: file.name
+          const id = path.basename(file.name, '.json');
+          const item = {
+            style: file.name,
           };
           addStyle(id, item, false, false);
         }
@@ -219,27 +219,27 @@ export function server(opts) {
     });
 
     const watcher = chokidar.watch(path.join(options.paths.styles, '*.json'),
-      {
-      });
+        {
+        });
     watcher.on('all',
-      (eventType, filename) => {
-        if (filename) {
-          let id = path.basename(filename, '.json');
-          console.log(`Style "${id}" changed, updating...`);
+        (eventType, filename) => {
+          if (filename) {
+            const id = path.basename(filename, '.json');
+            console.log(`Style "${id}" changed, updating...`);
 
-          serve_style.remove(serving.styles, id);
-          if (!isLight) {
-            serve_rendered.remove(serving.rendered, id);
-          }
+            serve_style.remove(serving.styles, id);
+            if (!isLight) {
+              serve_rendered.remove(serving.rendered, id);
+            }
 
-          if (eventType == "add" || eventType == "change") {
-            let item = {
-              style: filename
-            };
-            addStyle(id, item, false, false);
+            if (eventType == 'add' || eventType == 'change') {
+              const item = {
+                style: filename,
+              };
+              addStyle(id, item, false, false);
+            }
           }
-        }
-      });
+        });
   }
 
   app.get('/styles.json', (req, res, next) => {
@@ -251,7 +251,7 @@ export function server(opts) {
         version: styleJSON.version,
         name: styleJSON.name,
         id: id,
-        url: `${getPublicUrl(opts.publicUrl, req)}styles/${id}/style.json${query}`
+        url: `${getPublicUrl(opts.publicUrl, req)}styles/${id}/style.json${query}`,
       });
     }
     res.send(result);
@@ -267,7 +267,7 @@ export function server(opts) {
         path = `${type}/${id}`;
       }
       info.tiles = getTileUrls(req, info.tiles, path, info.format, opts.publicUrl, {
-        'pbf': options.pbfAlias
+        'pbf': options.pbfAlias,
       });
       arr.push(info);
     }
@@ -284,7 +284,7 @@ export function server(opts) {
     res.send(addTileJSONs(addTileJSONs([], req, 'rendered'), req, 'data'));
   });
 
-  //------------------------------------
+  // ------------------------------------
   // serve web presentations
   app.use('/', express.static(path.join(__dirname, '../public/resources')));
 
@@ -330,7 +330,7 @@ export function server(opts) {
     }));
   };
 
-  serveTemplate('/$', 'index', req => {
+  serveTemplate('/$', 'index', (req) => {
     const styles = clone(serving.styles || {});
     for (const id of Object.keys(styles)) {
       const style = styles[id];
@@ -347,8 +347,8 @@ export function server(opts) {
         }
 
         style.xyz_link = getTileUrls(
-          req, style.serving_rendered.tileJSON.tiles,
-          `styles/${id}`, style.serving_rendered.tileJSON.format, opts.publicUrl)[0];
+            req, style.serving_rendered.tileJSON.tiles,
+            `styles/${id}`, style.serving_rendered.tileJSON.format, opts.publicUrl)[0];
       }
     }
     const data = clone(serving.data || {});
@@ -367,9 +367,9 @@ export function server(opts) {
         }
 
         data_.xyz_link = getTileUrls(
-          req, tilejson.tiles, `data/${id}`, tilejson.format, opts.publicUrl, {
-            'pbf': options.pbfAlias
-          })[0];
+            req, tilejson.tiles, `data/${id}`, tilejson.format, opts.publicUrl, {
+              'pbf': options.pbfAlias,
+            })[0];
       }
       if (data_.filesize) {
         let suffix = 'kB';
@@ -387,11 +387,11 @@ export function server(opts) {
     }
     return {
       styles: Object.keys(styles).length ? styles : null,
-      data: Object.keys(data).length ? data : null
+      data: Object.keys(data).length ? data : null,
     };
   });
 
-  serveTemplate('/styles/:id/$', 'viewer', req => {
+  serveTemplate('/styles/:id/$', 'viewer', (req) => {
     const id = req.params.id;
     const style = clone(((serving.styles || {})[id] || {}).styleJSON);
     if (!style) {
@@ -409,13 +409,13 @@ export function server(opts) {
     return res.redirect(301, '/styles/' + req.params.id + '/');
   });
   */
-  serveTemplate('/styles/:id/wmts.xml', 'wmts', req => {
+  serveTemplate('/styles/:id/wmts.xml', 'wmts', (req) => {
     const id = req.params.id;
     const wmts = clone((serving.styles || {})[id]);
     if (!wmts) {
       return null;
     }
-    if (wmts.hasOwnProperty("serve_rendered") && !wmts.serve_rendered) {
+    if (wmts.hasOwnProperty('serve_rendered') && !wmts.serve_rendered) {
       return null;
     }
     wmts.id = id;
@@ -424,7 +424,7 @@ export function server(opts) {
     return wmts;
   });
 
-  serveTemplate('/data/:id/$', 'data', req => {
+  serveTemplate('/data/:id/$', 'data', (req) => {
     const id = req.params.id;
     const data = clone(serving.data[id]);
     if (!data) {
@@ -448,7 +448,7 @@ export function server(opts) {
     }
   });
 
-  const server = app.listen(process.env.PORT || opts.port, process.env.BIND || opts.bind, function () {
+  const server = app.listen(process.env.PORT || opts.port, process.env.BIND || opts.bind, function() {
     let address = this.address().address;
     if (address.indexOf('::') === 0) {
       address = `[${address}]`; // literal IPv6 address
@@ -462,14 +462,14 @@ export function server(opts) {
   return {
     app: app,
     server: server,
-    startupPromise: startupPromise
+    startupPromise: startupPromise,
   };
 }
 
-export const exports = opts => {
+export const exports = (opts) => {
   const running = start(opts);
 
-  running.startupPromise.catch(err => {
+  running.startupPromise.catch((err) => {
     console.error(err.message);
     process.exit(1);
   });

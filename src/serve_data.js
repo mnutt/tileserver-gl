@@ -10,7 +10,7 @@ import MBTiles from '@mapbox/mbtiles';
 import Pbf from 'pbf';
 import VectorTile from '@mapbox/vector-tile';
 
-import { getTileUrls, fixTileJSONCenter } from './utils.js';
+import {getTileUrls, fixTileJSONCenter} from './utils.js';
 
 export const serve_data = {
   init: (options, repo) => {
@@ -21,7 +21,7 @@ export const serve_data = {
       if (!item) {
         return res.sendStatus(404);
       }
-      let tileJSONFormat = item.tileJSON.format;
+      const tileJSONFormat = item.tileJSON.format;
       const z = req.params.z | 0;
       const x = req.params.x | 0;
       const y = req.params.y | 0;
@@ -52,7 +52,7 @@ export const serve_data = {
           } else {
             if (tileJSONFormat === 'pbf') {
               isGzipped = data.slice(0, 2).indexOf(
-                Buffer.from([0x1f, 0x8b])) === 0;
+                  Buffer.from([0x1f, 0x8b])) === 0;
               if (options.dataDecoratorFunc) {
                 if (isGzipped) {
                   data = zlib.unzipSync(data);
@@ -73,10 +73,10 @@ export const serve_data = {
 
               const tile = new VectorTile(new Pbf(data));
               const geojson = {
-                "type": "FeatureCollection",
-                "features": []
+                'type': 'FeatureCollection',
+                'features': [],
               };
-              for (let layerName in tile.layers) {
+              for (const layerName in tile.layers) {
                 const layer = tile.layers[layerName];
                 for (let i = 0; i < layer.length; i++) {
                   const feature = layer.feature(i);
@@ -109,9 +109,9 @@ export const serve_data = {
       }
       const info = clone(item.tileJSON);
       info.tiles = getTileUrls(req, info.tiles,
-                                     `data/${req.params.id}`, info.format, item.publicUrl, {
-                                       'pbf': options.pbfAlias
-                                     });
+          `data/${req.params.id}`, info.format, item.publicUrl, {
+            'pbf': options.pbfAlias,
+          });
       return res.send(info);
     });
 
@@ -120,7 +120,7 @@ export const serve_data = {
   add: (options, repo, params, id, publicUrl) => {
     const mbtilesFile = path.resolve(options.paths.mbtiles, params.mbtiles);
     let tileJSON = {
-      'tiles': params.domains || options.domains
+      'tiles': params.domains || options.domains,
     };
 
     const mbtilesFileStats = fs.statSync(mbtilesFile);
@@ -129,7 +129,7 @@ export const serve_data = {
     }
     let source;
     const sourceInfoPromise = new Promise((resolve, reject) => {
-      source = new MBTiles(mbtilesFile, err => {
+      source = new MBTiles(mbtilesFile, (err) => {
         if (err) {
           reject(err);
           return;
@@ -164,8 +164,8 @@ export const serve_data = {
       repo[id] = {
         tileJSON,
         publicUrl,
-        source
-      }
+        source,
+      };
     });
-  }
+  },
 };

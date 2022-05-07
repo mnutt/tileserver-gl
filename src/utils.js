@@ -36,7 +36,6 @@ export const getTileUrls = (req, domains, path, format, publicUrl, aliases) => {
     domains = [req.headers.host];
   }
 
-  const key = req.query.key;
   const queryParams = [];
   if (req.query.key) {
     queryParams.push(`key=${encodeURIComponent(req.query.key)}`);
@@ -56,13 +55,13 @@ export const getTileUrls = (req, domains, path, format, publicUrl, aliases) => {
       uris.push(`${req.protocol}://${domain}/${path}/{z}/{x}/{y}.${format}${query}`);
     }
   } else {
-    uris.push(`${publicUrl}${path}/{z}/{x}/{y}.${format}${query}`)
+    uris.push(`${publicUrl}${path}/{z}/{x}/{y}.${format}${query}`);
   }
 
   return uris;
 };
 
-export const fixTileJSONCenter = tileJSON => {
+export const fixTileJSONCenter = (tileJSON) => {
   if (tileJSON.bounds && !tileJSON.center) {
     const fitWidth = 1024;
     const tiles = fitWidth / 256;
@@ -70,9 +69,9 @@ export const fixTileJSONCenter = tileJSON => {
       (tileJSON.bounds[0] + tileJSON.bounds[2]) / 2,
       (tileJSON.bounds[1] + tileJSON.bounds[3]) / 2,
       Math.round(
-        -Math.log((tileJSON.bounds[2] - tileJSON.bounds[0]) / 360 / tiles) /
-        Math.LN2
-      )
+          -Math.log((tileJSON.bounds[2] - tileJSON.bounds[0]) / 360 / tiles) /
+          Math.LN2,
+      ),
     ];
   }
 };
@@ -122,9 +121,9 @@ export const getFontsPbf = (allowedFonts, fontPath, names, range, fallbacks) => 
   const queue = [];
   for (const font of fonts) {
     queue.push(
-      getFontPbf(allowedFonts, fontPath, font, range, clone(allowedFonts || fallbacks))
+        getFontPbf(allowedFonts, fontPath, font, range, clone(allowedFonts || fallbacks)),
     );
   }
 
-  return Promise.all(queue).then(values => glyphCompose.combine(values));
+  return Promise.all(queue).then((values) => glyphCompose.combine(values));
 };

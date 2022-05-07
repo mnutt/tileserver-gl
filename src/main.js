@@ -4,74 +4,74 @@
 
 import fs from 'fs';
 import path from 'path';
-import { fileURLToPath } from 'url';
+import {fileURLToPath} from 'url';
 import request from 'request';
-import { server } from './server.js';
+import {server} from './server.js';
 
 import MBTiles from '@mapbox/mbtiles';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const packageJson = JSON.parse(fs.readFileSync('package.json', 'utf8'))
+const packageJson = JSON.parse(fs.readFileSync('package.json', 'utf8'));
 
 const args = process.argv;
 if (args.length >= 3 && args[2][0] !== '-') {
   args.splice(2, 0, '--mbtiles');
 }
 
-import { Command } from 'commander';
+import {Command} from 'commander';
 const program = new Command();
-program 
-  .description('tileserver-gl startup options')
-  .usage('tileserver-gl [mbtiles] [options]')
-  .option(
-    '--mbtiles <file>',
-    'MBTiles file (uses demo configuration);\n' +
-    '\t                  ignored if the configuration file is also specified'
-  )
-  .option(
-    '-c, --config <file>',
-    'Configuration file [config.json]',
-    'config.json'
-  )
-  .option(
-    '-b, --bind <address>',
-    'Bind address'
-  )
-  .option(
-    '-p, --port <port>',
-    'Port [8080]',
-    8080,
-    parseInt
-  )
-  .option(
-    '-C|--no-cors',
-    'Disable Cross-origin resource sharing headers'
-  )
-  .option(
-    '-u|--public_url <url>',
-    'Enable exposing the server on subpaths, not necessarily the root of the domain'
-  )
-  .option(
-    '-V, --verbose',
-    'More verbose output'
-  )
-  .option(
-    '-s, --silent',
-    'Less verbose output'
-  )
-  .option(
-    '-l|--log_file <file>',
-    'output log file (defaults to standard out)'
-  )
-  .option(
-    '-f|--log_format <format>',
-    'define the log format:  https://github.com/expressjs/morgan#morganformat-options'
-  )
-  .version(
-    packageJson.version,
-    '-v, --version'
-  );
+program
+    .description('tileserver-gl startup options')
+    .usage('tileserver-gl [mbtiles] [options]')
+    .option(
+        '--mbtiles <file>',
+        'MBTiles file (uses demo configuration);\n' +
+    '\t                  ignored if the configuration file is also specified',
+    )
+    .option(
+        '-c, --config <file>',
+        'Configuration file [config.json]',
+        'config.json',
+    )
+    .option(
+        '-b, --bind <address>',
+        'Bind address',
+    )
+    .option(
+        '-p, --port <port>',
+        'Port [8080]',
+        8080,
+        parseInt,
+    )
+    .option(
+        '-C|--no-cors',
+        'Disable Cross-origin resource sharing headers',
+    )
+    .option(
+        '-u|--public_url <url>',
+        'Enable exposing the server on subpaths, not necessarily the root of the domain',
+    )
+    .option(
+        '-V, --verbose',
+        'More verbose output',
+    )
+    .option(
+        '-s, --silent',
+        'Less verbose output',
+    )
+    .option(
+        '-l|--log_file <file>',
+        'output log file (defaults to standard out)',
+    )
+    .option(
+        '-f|--log_format <format>',
+        'define the log format:  https://github.com/expressjs/morgan#morganformat-options',
+    )
+    .version(
+        packageJson.version,
+        '-v, --version',
+    );
 program.parse(process.argv);
 const options = program.opts();
 console.log(`Starting ${packageJson.name} v${packageJson.version}`);
@@ -91,7 +91,7 @@ const startServer = (configPath, config) => {
     silent: options.silent,
     logFile: options.log_file,
     logFormat: options.log_format,
-    publicUrl: publicUrl
+    publicUrl: publicUrl,
   });
 };
 
@@ -122,49 +122,48 @@ const startWithMBTiles = (mbtilesFile) => {
       }
       const bounds = info.bounds;
 
-      const styleDir = path.resolve(__dirname, "../node_modules/tileserver-gl-styles/");
+      const styleDir = path.resolve(__dirname, '../node_modules/tileserver-gl-styles/');
 
       const config = {
-        "options": {
-          "paths": {
-            "root": styleDir,
-            "fonts": "fonts",
-            "styles": "styles",
-            "mbtiles": path.dirname(mbtilesFile)
-          }
+        'options': {
+          'paths': {
+            'root': styleDir,
+            'fonts': 'fonts',
+            'styles': 'styles',
+            'mbtiles': path.dirname(mbtilesFile),
+          },
         },
-        "styles": {},
-        "data": {}
+        'styles': {},
+        'data': {},
       };
 
       if (info.format === 'pbf' &&
         info.name.toLowerCase().indexOf('openmaptiles') > -1) {
-
         config['data'][`v3`] = {
-          "mbtiles": path.basename(mbtilesFile)
+          'mbtiles': path.basename(mbtilesFile),
         };
 
 
         const styles = fs.readdirSync(path.resolve(styleDir, 'styles'));
-        for (let styleName of styles) {
+        for (const styleName of styles) {
           const styleFileRel = styleName + '/style.json';
           const styleFile = path.resolve(styleDir, 'styles', styleFileRel);
           if (fs.existsSync(styleFile)) {
             config['styles'][styleName] = {
-              "style": styleFileRel,
-              "tilejson": {
-                "bounds": bounds
-              }
+              'style': styleFileRel,
+              'tilejson': {
+                'bounds': bounds,
+              },
             };
           }
         }
       } else {
         console.log(`WARN: MBTiles not in "openmaptiles" format. Serving raw data only...`);
         config['data'][(info.id || 'mbtiles')
-                           .replace(/\//g, '_')
-                           .replace(/:/g, '_')
-                           .replace(/\?/g, '_')] = {
-          "mbtiles": path.basename(mbtilesFile)
+            .replace(/\//g, '_')
+            .replace(/:/g, '_')
+            .replace(/\?/g, '_')] = {
+          'mbtiles': path.basename(mbtilesFile),
         };
       }
 
@@ -185,7 +184,7 @@ fs.stat(path.resolve(options.config), (err, stats) => {
     if (!mbtiles) {
       // try to find in the cwd
       const files = fs.readdirSync(process.cwd());
-      for (let filename of files) {
+      for (const filename of files) {
         if (filename.endsWith('.mbtiles')) {
           const mbTilesStats = fs.statSync(filename);
           if (mbTilesStats.isFile() && mbTilesStats.size > 0) {
