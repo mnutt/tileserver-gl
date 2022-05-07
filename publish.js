@@ -19,7 +19,10 @@ child_process.execSync('rsync -av --exclude="light" --exclude=".git" --exclude="
 
 // PATCH `package.json`
 import fs from 'fs';
-const packageJson = JSON.parse(fs.readFileSync('package.json', 'utf8'))
+import {fileURLToPath} from 'url';
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const packageJson = JSON.parse(fs.readFileSync(__dirname + '/package.json', 'utf8'))
 
 packageJson.name += '-light';
 packageJson.description = 'Map tile server for JSON GL styles - serving vector tiles';
