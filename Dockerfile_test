@@ -24,7 +24,7 @@ RUN apt-get -qq update \
 RUN mkdir -p /usr/src/app
 WORKDIR /usr/src/app
 
-RUN wget -O test_data.zip https://github.com/maptiler/tileserver-gl/releases/download/v1.3.0/test_data.zip
+RUN wget -O test_data.zip https://github.com/acalcutt/tileserver-gl/releases/download/test_data/test_data.zip
 RUN unzip -q test_data.zip -d test_data
 
 ENV NODE_ENV="test"
