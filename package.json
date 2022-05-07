@@ -11,7 +11,7 @@
   },
   "license": "BSD-2-Clause",
   "engines": {
-    "node": ">=12"
+    "node": ">=14.13.0"
   },
   "scripts": {
     "test": "mocha test/**.js --timeout 10000",
