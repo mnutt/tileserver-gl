@@ -6,7 +6,7 @@ ENV CHOKIDAR_INTERVAL=500
 EXPOSE 80
 VOLUME /data
 WORKDIR /data
-ENTRYPOINT ["node", "/usr/src/app/", "-p", "80"]
+ENTRYPOINT ["node", "/usr/src/app/docker-entrypoint-light.sh", "-p", "80"]
 
 RUN mkdir -p /usr/src/app
 COPY / /usr/src/app
