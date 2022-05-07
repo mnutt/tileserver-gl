@@ -11,13 +11,15 @@
 /* CREATE tileserver-gl-light */
 
 // SYNC THE `light` FOLDER
-require('child_process').execSync('rsync -av --exclude="light" --exclude=".git" --exclude="node_modules" --delete . light', {
+
+import child_process from 'child_process'
+child_process.execSync('rsync -av --exclude="light" --exclude=".git" --exclude="node_modules" --delete . light', {
   stdio: 'inherit'
 });
 
 // PATCH `package.json`
-var fs = require('fs');
-var packageJson = require('./package');
+import fs from 'fs';
+const packageJson = JSON.parse(fs.readFileSync('package.json', 'utf8'))
 
 packageJson.name += '-light';
 packageJson.description = 'Map tile server for JSON GL styles - serving vector tiles';
@@ -28,7 +30,7 @@ delete packageJson.dependencies['sharp'];
 delete packageJson.optionalDependencies;
 delete packageJson.devDependencies;
 
-packageJson.engines.node = '>= 10';
+packageJson.engines.node = '>= 14.13.0';
 
 var str = JSON.stringify(packageJson, undefined, 2);
 fs.writeFileSync('light/package.json', str);
