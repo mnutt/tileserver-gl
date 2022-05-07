@@ -1,16 +1,17 @@
 {
   "name": "@acalcutt/tileserver-gl",
-  "version": "3.2.17",
+  "version": "4.0.0",
   "description": "Map tile server for JSON GL styles - vector and server side generated raster tiles",
   "main": "src/main.js",
   "bin": "src/main.js",
+  "type": "module",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/acalcutt/tileserver-gl.git"
   },
   "license": "BSD-2-Clause",
   "engines": {
-    "node": ">=12"
+    "node": ">=14.13.0"
   },
   "scripts": {
     "test": "mocha test/**.js --timeout 10000",
@@ -43,7 +44,7 @@
   },
   "devDependencies": {
     "mocha": "^9.2.2",
-    "should": "^13.2.3",
+    "chai": "4.3.6",
     "supertest": "^6.2.2"
   }
 }

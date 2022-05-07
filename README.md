@@ -6,7 +6,7 @@ Vector and raster maps with GL styles. Server side rendering by MapLibre GL Nati
 
 ## Getting Started with Node
 
-Make sure you have Node.js version **12** or above installed (up to node 16 has been tested)
+Make sure you have Node.js version **14.13.0** or above installed (up to node 16 has been tested)
 
 Install `@acalcutt/tileserver-gl` with server-side raster rendering of vector tiles with npm
 
