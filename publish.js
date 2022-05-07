@@ -19,6 +19,7 @@ child_process.execSync('rsync -av --exclude="light" --exclude=".git" --exclude="
 
 // PATCH `package.json`
 import fs from 'fs';
+import path from 'path';
 import {fileURLToPath} from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
