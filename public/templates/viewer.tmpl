@@ -48,7 +48,7 @@
 		var map = L.map('map', { zoomControl: false });
 		new L.Control.Zoom({ position: 'topright' }).addTo(map);
 		
-		var tile_urls, tile_attribution, tile_minzoom, tile_maxzoom;
+		var tile_urls = [], tile_attribution, tile_minzoom, tile_maxzoom;
 		fetch('{{public_url}}styles/{{id}}.json{{&key_query}}')
 		  .then(
 			response => {
