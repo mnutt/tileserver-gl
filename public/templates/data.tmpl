@@ -7,8 +7,8 @@
   {{#is_vector}}
   <link rel="stylesheet" type="text/css" href="{{public_url}}maplibre-gl.css{{&key_query}}" />
   <link rel="stylesheet" type="text/css" href="{{public_url}}maplibre-gl-inspect.css{{&key_query}}" />
-  <script src="{{public_url}}maplibre-gl.js{{&key_query}}"></script>
-  <script src="{{public_url}}maplibre-gl-inspect.min.js{{&key_query}}"></script>
+  <script>if (typeof Symbol !== 'undefined') { document.write('<script src="{{public_url}}maplibre-gl.js{{&key_query}}"><\/script>'); } else { document.write('<script src="{{public_url}}maplibre-gl-compat.js{{&key_query}}"><\/script>'); }</script>
+  <script>if (typeof Symbol !== 'undefined') { document.write('<script src="{{public_url}}maplibre-gl-inspect.min.js{{&key_query}}"><\/script>'); } else { document.write('<script src="{{public_url}}maplibre-gl-inspect-compat.min.js{{&key_query}}"><\/script>'); }</script>
   <style>
     body {background:#fff;color:#333;font-family:Arial, sans-serif;}
     #map {position:absolute;top:0;left:0;right:250px;bottom:0;}
@@ -18,7 +18,6 @@
   </style>
   {{/is_vector}}
   {{^is_vector}}
-  <link rel="stylesheet" type="text/css" href="{{public_url}}maplibre-gl.css{{&key_query}}" />
   <link rel="stylesheet" type="text/css" href="{{public_url}}leaflet.css{{&key_query}}" />
   <script src="{{public_url}}leaflet.js{{&key_query}}"></script>
   <script src="{{public_url}}leaflet-hash.js{{&key_query}}"></script>
@@ -81,51 +80,44 @@
 	new L.Control.Zoom({ position: 'topright' }).addTo(map);
 
 	var tile_urls = [], tile_attribution, tile_minzoom, tile_maxzoom;
-	fetch('{{public_url}}data/{{id}}.json{{&key_query}}')
-	  .then(
-		response => {
-		  if (response.status !== 200) {
-			console.log('There was an issue fetching the data json. Status Code: ' +
-			  response.status);
-			return;
-		  }
-
-		  response.json().then(function(data) {
-			for (const [key, value] of Object.entries(data)) {
-				var keyl = key.toLowerCase();
-				switch(keyl) {
-				  case "tiles":
-					tile_urls = value;
-					break;
-				  case "attribution":
-					tile_attribution = value;
-					break;
-				  case "minzoom":
-					tile_minzoom = value;
-					break;
-				  case "maxzoom":
-					tile_maxzoom = value;
-					break;
-				}
-				//console.log(`${keyl}: ${value}`);
+	var url = '{{public_url}}data/{{id}}.json{{&key_query}}';
+	var req = new XMLHttpRequest();
+	req.overrideMimeType("application/json");
+	req.open('GET', url, true);
+	req.onload = function() {
+		var jsonResponse = JSON.parse(req.responseText);
+		for (key in jsonResponse) {
+		  var keyl = key.toLowerCase();
+			switch(keyl) {
+			  case "tiles":
+				tile_urls = jsonResponse[key];
+				break;
+			  case "attribution":
+				tile_attribution = jsonResponse[key];
+				break;
+			  case "minzoom":
+				tile_minzoom = jsonResponse[key];
+				break;
+			  case "maxzoom":
+				tile_maxzoom = jsonResponse[key];
+				break;
 			}
+		}
 
-			for (const tile_url of tile_urls) {
-				// Load TilJSON layer.
-				L.tileLayer(tile_url, {
-					minZoom: tile_minzoom,
-					maxZoom: tile_maxzoom,
-					attribution: tile_attribution
-				}).addTo(map);
-			}
-			
-			map.eachLayer(function(layer) {
-			  // do not add scale prefix even if retina display is detected
-			  layer.scalePrefix = '.';
-			});
-		  });
-		})
-	  .catch(err => console.log('Could not fetch data json', err));
+		for (tile_url in tile_urls) {
+			L.tileLayer(tile_urls[tile_url], {
+				minZoom: tile_minzoom,
+				maxZoom: tile_maxzoom,
+				attribution: tile_attribution
+			}).addTo(map);
+		}
+		
+		map.eachLayer(function(layer) {
+		  // do not add scale prefix even if retina display is detected
+		  layer.scalePrefix = '.';
+		});
+	};
+	req.send(null);
 
     setTimeout(function() {
       new L.Hash(map);
