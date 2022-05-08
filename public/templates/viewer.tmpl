@@ -48,7 +48,7 @@
 		var map = L.map('map', { zoomControl: false });
 		new L.Control.Zoom({ position: 'topright' }).addTo(map);
 		
-		var tile_url, tile_attribution, tile_minzoom, tile_maxzoom;
+		var tile_urls, tile_attribution, tile_minzoom, tile_maxzoom;
 		fetch('{{public_url}}styles/{{id}}.json{{&key_query}}')
 		  .then(
 			response => {
@@ -64,7 +64,7 @@
 					var keyl = key.toLowerCase();
 					switch(keyl) {
 					  case "tiles":
-						tile_url = value[0];
+						tile_urls = value;
 						break;
 					  case "attribution":
 						tile_attribution = value;
@@ -78,14 +78,16 @@
 					}
 					//console.log(`${keyl}: ${value}`);
 				}
-
-				// Load TilJSON layer.
-				L.tileLayer(tile_url, {
-					minZoom: tile_minzoom,
-					maxZoom: tile_maxzoom,
-					attribution: tile_attribution
-				}).addTo(map);
 				
+				for (const tile_url of tile_urls) {
+					// Load TilJSON layer.
+					L.tileLayer(tile_url, {
+						minZoom: tile_minzoom,
+						maxZoom: tile_maxzoom,
+						attribution: tile_attribution
+					}).addTo(map);
+				}
+
 				map.eachLayer(function(layer) {
 				  // do not add scale prefix even if retina display is detected
 				  layer.scalePrefix = '.';
