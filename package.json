@@ -31,7 +31,6 @@
     "color": "4.2.3",
     "commander": "9.2.0",
     "cors": "2.8.5",
-    "esm": "3.2.25",
     "express": "4.17.3",
     "handlebars": "4.7.7",
     "http-shutdown": "1.2.2",
