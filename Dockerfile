@@ -37,6 +37,7 @@ RUN export DEBIAN_FRONTEND=noninteractive \
       curl \
       libuv1-dev \
       libc6-dev \
+      libcap2-bin \
   && apt-get -y --purge autoremove \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/*
@@ -54,6 +55,9 @@ ENV CHOKIDAR_INTERVAL=500
 
 VOLUME /data
 WORKDIR /data
+
+# allow node to listen on low ports
+RUN setcap 'cap_net_bind_service=+ep' /usr/local/bin/node
 
 EXPOSE 80
 
