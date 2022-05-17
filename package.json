@@ -10,7 +10,7 @@
   },
   "license": "BSD-2-Clause",
   "engines": {
-    "node": ">=10.17 <11"
+    "node": "^14 || ^16 || ^18"
   },
   "mocha": {
     "exit": true,
@@ -25,46 +25,46 @@
   },
   "dependencies": {
     "@mapbox/glyph-pbf-composite": "0.0.3",
-    "@mapbox/mapbox-gl-native": "5.0.2",
-    "@mapbox/mapbox-gl-style-spec": "13.12.0",
-    "@mapbox/mbtiles": "0.11.0",
-    "@mapbox/sphericalmercator": "1.1.0",
+    "@mapbox/mapbox-gl-style-spec": "13.24.0",
+    "@mapbox/mbtiles": "0.12.1",
+    "@mapbox/sphericalmercator": "1.2.0",
     "@mapbox/vector-tile": "1.3.1",
-    "@naturalatlas/mapbox-gl-native": "^1.0.2",
     "advanced-pool": "0.3.3",
-    "canvas": "2.6.1",
-    "chokidar": "3.3.1",
+    "canvas": "2.9.1",
+    "chokidar": "3.5.3",
     "clone": "2.1.2",
-    "color": "3.1.2",
+    "color": "4.2.3",
     "commander": "4.1.1",
     "cors": "2.8.5",
     "esm": "3.2.25",
-    "express": "4.17.1",
-    "handlebars": "4.7.3",
+    "express": "4.18.1",
+    "handlebars": "4.7.7",
     "http-shutdown": "1.2.2",
     "lru-cache": "^6.0.0",
     "morgan": "^1.10.0",
-    "node-fetch": "^2.6.1",
+    "mnutt-maplibre-gl-native": "https://github.com/mnutt/maplibre-gl-native.git#publish-github",
+    "node-fetch": "^2.6.7",
     "pbf": "3.2.1",
-    "proj4": "2.6.0",
-    "prom-client": "^13.1.0",
-    "promise.allsettled": "1.0.4",
+    "proj4": "2.8.0",
+    "prom-client": "^14.0.1",
+    "promise.allsettled": "1.0.5",
     "request": "2.88.2",
-    "sharp": "0.28.3",
+    "sharp": "0.30.4",
     "tileserver-gl-styles": "2.0.0"
   },
   "devDependencies": {
-    "eslint": "^7.24.0",
-    "eslint-config-prettier": "^8.2.0",
+    "eslint": "^8.15.0",
+    "eslint-config-prettier": "^8.5.0",
     "eslint-plugin-node": "^11.1.0",
-    "eslint-plugin-prettier": "^3.4.0",
-    "mocha": "^8.3.2",
+    "eslint-plugin-prettier": "^4.0.0",
+    "mocha": "^10.0.0",
     "mockery": "^2.1.0",
-    "prettier": "^2.2.1",
+    "prettier": "^2.6.2",
     "should": "^13.2.3",
-    "supertest": "^4.0.2"
+    "supertest": "^6.2.3"
   },
   "volta": {
-    "node": "10.24.1"
+    "node": "18.1.0",
+    "yarn": "1.22.18"
   }
 }
