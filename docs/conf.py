@@ -43,7 +43,7 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'Maplibre TileServer GL'
+project = u'MapLibre TileServer GL'
 copyright = u'2022 Andrew Calcutt 2016, Klokan Technologies GmbH'
 
 # The version info for the project you're documenting, acts as replacement for
