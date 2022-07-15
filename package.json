@@ -1,6 +1,6 @@
 {
   "name": "@acalcutt/tileserver-gl",
-  "version": "4.0.8",
+  "version": "4.0.15",
   "description": "Map tile server for JSON GL styles - vector and server side generated raster tiles",
   "main": "src/main.js",
   "bin": "src/main.js",
@@ -18,7 +18,7 @@
     "docker": "docker build -f Dockerfile . && docker run --rm -i -p 8080:80 $(docker build -q .)"
   },
   "dependencies": {
-    "@acalcutt/maplibre-gl-native": "5.0.14",
+    "@acalcutt/maplibre-gl-native": "5.0.21",
     "@mapbox/glyph-pbf-composite": "0.0.3",
     "@mapbox/mbtiles": "0.12.1",
     "@mapbox/sphericalmercator": "1.2.0",
