@@ -1,0 +1,42 @@
+name: 'The Pipeline'
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  pull_request:
+    branches:
+      - main
+      - master
+
+jobs:
+  extract-branch:
+    name: 'Fetch branch'
+    runs-on: ubuntu-latest
+    outputs:
+      current_branch: ${{ steps.get-branch.outputs.current_branch }}
+    steps:
+      - name: Extract branch name 🕊
+        id: get-branch
+        run: echo "::set-output name=current_branch::${GITHUB_REF##*/}"
+  ci:
+    name: 'CI'
+    needs:
+      - extract-branch
+    uses: maptiler/tileserver-gl/.github/workflows/ci.yml@main
+  automerger:
+    name: 'Auto Merge Bot PRs'
+    needs:
+      - ci
+    if: ${{ github.event_name == 'pull_request' && github.event.pull_request.user.login == 'dependabot[bot]' }}
+    uses: maptiler/tileserver-gl/.github/workflows/automerger.yml@main
+  builder:
+    name: 'Build & Publish Docker Image(s)'
+    needs:
+      - extract-branch
+      - ci
+    if: ${{ github.event_name == 'push' }}
+    uses: maptiler/tileserver-gl/.github/workflows/builder.yml@main
+    with:
+      branch: ${{ needs.extract-branch.outputs.current_branch }}
