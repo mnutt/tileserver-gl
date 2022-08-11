@@ -3,11 +3,9 @@ name: 'The Pipeline'
 on:
   push:
     branches:
-      - main
       - master
   pull_request:
     branches:
-      - main
       - master
 
 jobs:
@@ -24,19 +22,19 @@ jobs:
     name: 'CI'
     needs:
       - extract-branch
-    uses: maptiler/tileserver-gl/.github/workflows/ci.yml@main
+    uses: maptiler/tileserver-gl/.github/workflows/ci.yml@master
   automerger:
     name: 'Auto Merge Bot PRs'
     needs:
       - ci
     if: ${{ github.event_name == 'pull_request' && github.event.pull_request.user.login == 'dependabot[bot]' }}
-    uses: maptiler/tileserver-gl/.github/workflows/automerger.yml@main
+    uses: maptiler/tileserver-gl/.github/workflows/automerger.yml@master
   builder:
     name: 'Build & Publish Docker Image(s)'
     needs:
       - extract-branch
       - ci
     if: ${{ github.event_name == 'push' }}
-    uses: maptiler/tileserver-gl/.github/workflows/builder.yml@main
+    uses: maptiler/tileserver-gl/.github/workflows/builder.yml@master
     with:
       branch: ${{ needs.extract-branch.outputs.current_branch }}
