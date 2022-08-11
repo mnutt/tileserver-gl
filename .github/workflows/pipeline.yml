@@ -29,11 +29,17 @@ jobs:
       - ci
     if: ${{ github.event_name == 'pull_request' && github.event.pull_request.user.login == 'dependabot[bot]' }}
     uses: maptiler/tileserver-gl/.github/workflows/automerger.yml@master
+  ct:
+    name: 'CT'
+    needs:
+      - extract-branch
+    uses: maptiler/tileserver-gl/.github/workflows/ct.yml@master
   builder:
     name: 'Build & Publish Docker Image(s)'
     needs:
       - extract-branch
       - ci
+      - ct
     if: ${{ github.event_name == 'push' }}
     uses: maptiler/tileserver-gl/.github/workflows/builder.yml@master
     with:
