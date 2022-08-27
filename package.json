@@ -18,7 +18,7 @@
     "docker": "docker build -f Dockerfile . && docker run --rm -i -p 8080:80 $(docker build -q .)"
   },
   "dependencies": {
-    "@acalcutt/maplibre-gl-native": "5.0.24",
+    "@acalcutt/maplibre-gl-native": "5.0.25",
     "@mapbox/glyph-pbf-composite": "0.0.3",
     "@mapbox/mbtiles": "0.12.1",
     "@mapbox/sphericalmercator": "1.2.0",
