@@ -1,0 +1,30 @@
+stages:
+  - test
+  - upload
+
+cache:
+  untracked: true
+  paths:
+    - node_modules/
+
+tests:
+  stage: test
+  image: 817035293158.dkr.ecr.us-east-1.amazonaws.com/node:10.17-buster
+  script:
+    - apt-get update
+    - apt-get install -qq libcairo2-dev libpango1.0-dev libgif-dev build-essential g++
+    - apt-get install -qq xvfb libgles2-mesa-dev libgbm-dev libxxf86vm-dev
+    - wget -O test_data.zip https://movableink-maps.s3.amazonaws.com/test/test_data.zip
+    - unzip -o -q test_data.zip -d test_data
+    - yarn
+    - xvfb-run --server-args="-screen 0 1024x768x24" yarn test
+
+s3push:
+  stage: upload
+  image: 817035293158.dkr.ecr.us-east-1.amazonaws.com/movableink/awscli:latest
+  script:
+    - rm -Rf config
+    - rm -Rf /tmp/dist
+    - mkdir -p /tmp/dist/tarballs/tileserver
+    - tar -czf /tmp/dist/tarballs/tileserver/tileserver-${CI_COMMIT_SHA}.tar.gz .
+    - aws s3 sync /tmp/dist s3://movableink-apps --acl private

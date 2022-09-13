@@ -39,6 +39,7 @@
               {{/if}}
               {{#if serving_rendered}}
                 {{#if serving_data}}| {{/if}}<a href="{{public_url}}styles/{{@key}}.json{{&../key_query}}">TileJSON</a>
+                | <a href="{{public_url}}styles/{{@key}}/static-preview">Static Editor</a>
               {{/if}}
               {{#if serving_rendered}}
                 | <a href="/styles/{{@key}}/wmts.xml{{&../key_query}}">WMTS</a>
