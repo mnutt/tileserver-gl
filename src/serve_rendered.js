@@ -103,16 +103,13 @@ const extractPathFromQuery = (query, transformer) => {
 
 
 const extractMarkerFromQuery = (query, transformer) => {
-
   const markerPositions = [];
-
   const markerParts = (query.markers || query.marker || '').split('|');
   
   if(query.marker && markerParts[0] === 'center') {return null;}
-
-  markerParts.forEach(marker => {
-    markerPositions.push(splitCoordinatePair(marker,query,transformer));
-  });
+    markerParts.forEach(marker => {
+      markerPositions.push(splitCoordinatePair(marker,query,transformer));
+    });
 
   return markerPositions;
 };
