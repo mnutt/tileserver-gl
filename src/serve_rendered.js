@@ -16,7 +16,7 @@ import mlgl from '@acalcutt/maplibre-gl-native';
 import MBTiles from '@mapbox/mbtiles';
 import proj4 from 'proj4';
 import request from 'request';
-import {getFontsPbf, getTileUrls, fixTileJSONCenter} from './utils.js;
+import {getFontsPbf, getTileUrls, fixTileJSONCenter} from './utils.js';
 
 import {fileURLToPath} from 'url';
 const __filename = fileURLToPath(import.meta.url);
