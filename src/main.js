@@ -210,7 +210,7 @@ fs.stat(path.resolve(opts.config), (err, stats) => {
       return startWithMBTiles(mbtiles);
     }
   } else {
-    console.log(`Using specified config file from ${options.config}`);
+    console.log(`Using specified config file from ${opts.config}`);
     return startServer(opts.config, null);
   }
 });
