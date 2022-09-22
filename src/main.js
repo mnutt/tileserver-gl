@@ -77,20 +77,20 @@ const opts = program.opts();
 console.log(`Starting ${packageJson.name} v${packageJson.version}`);
 
 const startServer = (configPath, config) => {
-  let publicUrl = options.public_url;
+  let publicUrl = opts.public_url;
   if (publicUrl && publicUrl.lastIndexOf('/') !== publicUrl.length - 1) {
     publicUrl += '/';
   }
   return server({
     configPath: configPath,
     config: config,
-    bind: options.bind,
-    port: options.port,
-    cors: options.cors,
-    verbose: options.verbose,
-    silent: options.silent,
-    logFile: options.log_file,
-    logFormat: options.log_format,
+    bind: opts.bind,
+    port: opts.port,
+    cors: opts.cors,
+    verbose: opts.verbose,
+    silent: opts.silent,
+    logFile: opts.log_file,
+    logFormat: opts.log_format,
     publicUrl: publicUrl,
   });
 };
@@ -167,7 +167,7 @@ const startWithMBTiles = (mbtilesFile) => {
         };
       }
 
-      if (options.verbose) {
+      if (opts.verbose) {
         console.log(JSON.stringify(config, undefined, 2));
       } else {
         console.log('Run with --verbose to see the config file here.');
@@ -178,9 +178,9 @@ const startWithMBTiles = (mbtilesFile) => {
   });
 };
 
-fs.stat(path.resolve(options.config), (err, stats) => {
+fs.stat(path.resolve(opts.config), (err, stats) => {
   if (err || !stats.isFile() || stats.size === 0) {
-    let mbtiles = options.mbtiles;
+    let mbtiles = opts.mbtiles;
     if (!mbtiles) {
       // try to find in the cwd
       const files = fs.readdirSync(process.cwd());
@@ -211,6 +211,6 @@ fs.stat(path.resolve(options.config), (err, stats) => {
     }
   } else {
     console.log(`Using specified config file from ${options.config}`);
-    return startServer(options.config, null);
+    return startServer(opts.config, null);
   }
 });
