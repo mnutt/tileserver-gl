@@ -12,7 +12,7 @@ import clone from 'clone';
 import Color from 'color';
 import express from 'express';
 import SphericalMercator from '@mapbox/sphericalmercator';
-import mlgl from '@acalcutt/maplibre-gl-native';
+import mlgl from '@maplibre/maplibre-gl-native';
 import MBTiles from '@mapbox/mbtiles';
 import proj4 from 'proj4';
 import request from 'request';
@@ -634,7 +634,7 @@ export const serve_rendered = {
     let styleJSON;
     const createPool = (ratio, mode, min, max) => {
       const createRenderer = (ratio, createCallback) => {
-        const renderer = new mbgl.Map({
+        const renderer = new mlgl.Map({
           mode: mode,
           ratio: ratio,
           request: (req, callback) => {
