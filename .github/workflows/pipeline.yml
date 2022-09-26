@@ -8,6 +8,10 @@ on:
     branches:
       - master
 
+concurrency:
+  group: ci-${{ github.ref }}-1
+  cancel-in-progress: true
+
 jobs:
   extract-branch:
     name: 'Fetch branch'
@@ -34,13 +38,3 @@ jobs:
     needs:
       - extract-branch
     uses: maptiler/tileserver-gl/.github/workflows/ct.yml@master
-  builder:
-    name: 'Build & Publish Docker Image(s)'
-    needs:
-      - extract-branch
-      - ci
-      - ct
-    if: ${{ github.event_name == 'push' }}
-    uses: maptiler/tileserver-gl/.github/workflows/builder.yml@master
-    with:
-      branch: ${{ needs.extract-branch.outputs.current_branch }}

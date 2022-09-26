@@ -7,10 +7,6 @@ permissions:
   checks: write
   contents: read
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.head_ref || github.ref }}
-  cancel-in-progress: true
-
 jobs:
   ci:
     runs-on: ubuntu-latest
@@ -49,6 +45,3 @@ jobs:
         with:
           dockerfile: Dockerfile
           ignore: DL3003,DL3008
-
-      # - name: Run tests 🧪
-      #   run: npm run test
