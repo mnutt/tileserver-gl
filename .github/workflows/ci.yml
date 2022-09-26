@@ -24,7 +24,9 @@ jobs:
       - name: Setup node env 📦
         uses: actions/setup-node@v3
         with:
-          node-version: 10
+          node-version: 17
+          check-latest: true
+          cache: 'npm'
 
       - name: Install dependencies 🚀
         run: npm i --prefer-offline --no-audit --omit=optional
