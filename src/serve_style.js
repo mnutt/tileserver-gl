@@ -1,7 +1,7 @@
 'use strict';
 
 import path from 'path';
-import fs from 'fs';
+import fs from 'node:fs';
 
 import clone from 'clone';
 import express from 'express';
@@ -138,7 +138,7 @@ export const serve_style = {
       spritePath = path.join(options.paths.sprites,
           styleJSON.sprite
               .replace('{style}', path.basename(styleFile, '.json'))
-              .replace('{styleJsonFolder}', path.relative(options.paths.sprites, path.dirname(styleFile))),
+              .replace('{styleJsonFolder}', path.relative(options.paths.sprites, path.dirname(styleFile)))
       );
       styleJSON.sprite = `local://styles/${id}/sprite`;
     }

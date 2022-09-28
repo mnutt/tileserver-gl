@@ -2,7 +2,7 @@
 
 'use strict';
 
-import fs from 'fs';
+import fs from 'node:fs';
 import path from 'path';
 import {fileURLToPath} from 'url';
 import request from 'request';
@@ -130,17 +130,17 @@ const startWithMBTiles = (mbtilesFile) => {
             'root': styleDir,
             'fonts': 'fonts',
             'styles': 'styles',
-            'mbtiles': path.dirname(mbtilesFile),
-          },
+            'mbtiles': path.dirname(mbtilesFile)
+          }
         },
         'styles': {},
-        'data': {},
+        'data': {}
       };
 
       if (info.format === 'pbf' &&
         info.name.toLowerCase().indexOf('openmaptiles') > -1) {
         config['data'][`v3`] = {
-          'mbtiles': path.basename(mbtilesFile),
+          'mbtiles': path.basename(mbtilesFile)
         };
 
 
@@ -152,8 +152,8 @@ const startWithMBTiles = (mbtilesFile) => {
             config['styles'][styleName] = {
               'style': styleFileRel,
               'tilejson': {
-                'bounds': bounds,
-              },
+                'bounds': bounds
+              }
             };
           }
         }
@@ -163,7 +163,7 @@ const startWithMBTiles = (mbtilesFile) => {
             .replace(/\//g, '_')
             .replace(/:/g, '_')
             .replace(/\?/g, '_')] = {
-          'mbtiles': path.basename(mbtilesFile),
+          'mbtiles': path.basename(mbtilesFile)
         };
       }
 

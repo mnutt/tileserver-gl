@@ -6,9 +6,14 @@ Vector and raster maps with GL styles. Server side rendering by MapLibre GL Nati
 
 ## Getting Started with Node
 
-Make sure you have Node.js version **14.13.0** or above installed (up to node 16 has been tested)
+Vector and raster maps with GL styles. Server-side rendering by MapLibre GL Native. Map tile server for MapLibre GL JS, Android, iOS, Leaflet, OpenLayers, GIS via WMTS, etc.
 
-Install `@acalcutt/tileserver-gl` with server-side raster rendering of vector tiles with npm
+Download vector tiles from [OpenMapTiles](https://data.maptiler.com/downloads/planet/).
+## Getting Started with Node
+
+Make sure you have Node.js version **14.20.0** or above installed. Node 16 is recommended. (running `node -v` it should output something like `v16.x.x`). Running without docker requires [Native dependencies](https://tileserver.readthedocs.io/en/latest/installation.html#npm) to be installed first.
+
+Install `@acalcutt/tileserver-gl` with server-side raster rendering of vector tiles with npm. 
 
 ```bash
 npm install -g @acalcutt/tileserver-gl
@@ -75,10 +80,11 @@ Run from command line
 xvfb-run --server-args="-screen 0 1024x768x24" node .
 ```
 
-
- 
-
 ## Documentation
 
 You can read full documentation of this project at https://tileserver-gl.readthedocs.io/en/latest/.
+
+## Alternative
+
+Discover MapTiler Server if you need a [map server with easy setup and user-friendly interface](https://www.maptiler.com/server/).
 

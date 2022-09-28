@@ -1,7 +1,7 @@
 'use strict';
 
 import advancedPool from 'advanced-pool';
-import fs from 'fs';
+import fs from 'node:fs';
 import path from 'path';
 import url from 'url';
 import util from 'util';
@@ -104,7 +104,6 @@ const extractPathFromQuery = (query, transformer) => {
     }
   return path;
 };
-
 
 const extractMarkerFromQuery = (query, transformer) => {
   const markerPositions = [];
@@ -241,7 +240,7 @@ const calcZForBBox = (bbox, w, h, query) => {
 
   z -= Math.max(
       Math.log((maxCorner[0] - minCorner[0]) / w_),
-      Math.log((maxCorner[1] - minCorner[1]) / h_),
+      Math.log((maxCorner[1] - minCorner[1]) / h_)
   ) / Math.LN2;
 
   z = Math.max(Math.log(Math.max(w, h) / 256) / Math.LN2, Math.min(25, z));
@@ -503,8 +502,7 @@ export const serve_rendered = {
           return res.sendStatus(404);
         }
         const raw = req.params.raw;
-        const bbox = [+req.params.minx, +req.params.miny,
-          +req.params.maxx, +req.params.maxy];
+        const bbox = [+req.params.minx, +req.params.miny, +req.params.maxx, +req.params.maxy];
         let center = [(bbox[0] + bbox[2]) / 2, (bbox[1] + bbox[3]) / 2];
 
         const transformer = raw ?
@@ -598,7 +596,7 @@ export const serve_rendered = {
 
         const bbox_ = mercator.convert(bbox, '900913');
         const center = mercator.inverse(
-            [(bbox_[0] + bbox_[2]) / 2, (bbox_[1] + bbox_[3]) / 2],
+            [(bbox_[0] + bbox_[2]) / 2, (bbox_[1] + bbox_[3]) / 2]
         );
 
         const z = calcZForBBox(bbox, w, h, req.query);
@@ -651,7 +649,7 @@ export const serve_rendered = {
               const fontstack = unescape(parts[2]);
               const range = parts[3].split('.')[0];
               getFontsPbf(
-                  null, options.paths[protocol], fontstack, range, existingFonts,
+                  null, options.paths[protocol], fontstack, range, existingFonts
               ).then((concated) => {
                 callback(null, {data: concated});
               }, (err) => {
@@ -893,10 +891,10 @@ export const serve_rendered = {
       item.map.renderers.forEach((pool) => {
         pool.close();
       });
-      item.map.renderers_static.forEach(pool => {
+      item.map.renderers_static.forEach((pool) => {
         pool.close();
       });
     }
     delete repo[id];
-  },
+  }
 };
