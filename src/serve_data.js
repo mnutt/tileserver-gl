@@ -120,7 +120,7 @@ export const serve_data = {
   add: (options, repo, params, id, publicUrl) => {
     const mbtilesFile = path.resolve(options.paths.mbtiles, params.mbtiles);
     let tileJSON = {
-      'tiles': params.domains || options.domains,
+      'tiles': params.domains || options.domains
     };
 
     const mbtilesFileStats = fs.statSync(mbtilesFile);
@@ -129,7 +129,7 @@ export const serve_data = {
     }
     let source;
     const sourceInfoPromise = new Promise((resolve, reject) => {
-      source = new MBTiles(mbtilesFile + '?mode=ro', err => {
+      source = new MBTiles(mbtilesFile + '?mode=ro', (err) => {
         if (err) {
           reject(err);
           return;
@@ -168,5 +168,5 @@ export const serve_data = {
         source
       };
     });
-  },
+  }
 };

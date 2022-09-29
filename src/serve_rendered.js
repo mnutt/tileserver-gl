@@ -41,7 +41,7 @@ const extensionToFormat = {
   '.jpg': 'jpeg',
   '.jpeg': 'jpeg',
   '.png': 'png',
-  '.webp': 'webp',
+  '.webp': 'webp'
 };
 
 /**
@@ -49,7 +49,7 @@ const extensionToFormat = {
  * string is for unknown or unsupported formats.
  */
 const cachedEmptyResponses = {
-  '': Buffer.alloc(0),
+  '': Buffer.alloc(0)
 };
 
 /**
@@ -86,8 +86,8 @@ function createEmptyResponse(format, color, callback) {
     raw: {
       width: 1,
       height: 1,
-      channels: channels,
-    },
+      channels: channels
+    }
   }).toFormat(format).toBuffer((err, buffer, info) => {
     if (!err) {
       cachedEmptyResponses[cacheKey] = buffer;
@@ -101,37 +101,39 @@ const extractPathFromQuery = (query, transformer) => {
   const path = [];
   for (const pair of pathParts) {
     path.push(splitCoordinatePair(pair, query, transformer));
-    }
+  }
   return path;
 };
 
 const extractMarkerFromQuery = (query, transformer) => {
   const markerPositions = [];
   const markerParts = (query.markers || query.marker || '').split('|');
-  
-  if(query.marker && markerParts[0] === 'center') {return null;}
-    markerParts.forEach(marker => {
-      markerPositions.push(splitCoordinatePair(marker,query,transformer));
-    });
+
+  if (query.marker && markerParts[0] === 'center') {
+    return null;
+  }
+  markerParts.forEach((marker) => {
+    markerPositions.push(splitCoordinatePair(marker, query, transformer));
+  });
 
   return markerPositions;
 };
 
 const splitCoordinatePair = (pair, query, transformer) => {
   const pairParts = pair.split(',');
-    if (pairParts.length === 2) {
-      let coordinatePair;
-      if (query.latlng === '1' || query.latlng === 'true') {
-        coordinatePair = [+(pairParts[1]), +(pairParts[0])];
-      } else {
-        coordinatePair = [+(pairParts[0]), +(pairParts[1])];
-      }
-      if (transformer) {
-        coordinatePair = transformer(coordinatePair);
-      }
-      return coordinatePair;
+  if (pairParts.length === 2) {
+    let coordinatePair;
+    if (query.latlng === '1' || query.latlng === 'true') {
+      coordinatePair = [+(pairParts[1]), +(pairParts[0])];
+    } else {
+      coordinatePair = [+(pairParts[0]), +(pairParts[1])];
     }
-}
+    if (transformer) {
+      coordinatePair = transformer(coordinatePair);
+    }
+    return coordinatePair;
+  }
+};
 
 const precisePx = (ll, zoom) => {
   const px = mercator.px(ll, 20);
@@ -140,7 +142,7 @@ const precisePx = (ll, zoom) => {
 };
 
 const georeferenceMapCenter = (x, y, z, h) => {
-  let center = precisePx([x, y], z);
+  const center = precisePx([x, y], z);
 
   const mapHeight = 512 * (1 << z);
   const maxEdge = center[1] + h / 2;
@@ -161,9 +163,9 @@ const renderMarkerOverlay = (x, y, z, w, h, scale, marker) => {
 
   const markers = [];
 
-  marker.forEach(m => {
-    markers.push(precisePx(m,z));
-  })
+  marker.forEach((m) => {
+    markers.push(precisePx(m, z));
+  });
 
   const ctx = canvas.getContext('2d');
   ctx.scale(scale, scale);
@@ -174,25 +176,24 @@ const renderMarkerOverlay = (x, y, z, w, h, scale, marker) => {
     const markerImage = new Image;
     markerImage.src = imageFile;
 
-    markers.forEach(marker => {
-      ctx.drawImage(markerImage, marker[0] - (markerImage.width / 2) * 0.2, marker[1] - (markerImage.height) * 0.2, markerImage.width * 0.2, markerImage.height * 0.2)
-    })
+    markers.forEach((marker) => {
+      ctx.drawImage(markerImage, marker[0] - (markerImage.width / 2) * 0.2, marker[1] - (markerImage.height) * 0.2, markerImage.width * 0.2, markerImage.height * 0.2);
+    });
     ctx.fill();
     ctx.stroke();
-  }
-  catch(e) {
+  } catch (e) {
     console.log('Errorloading marker image', e);
   }
   return canvas.toBuffer();
 };
 
 const renderOverlay = (z, x, y, bearing, pitch, w, h, scale,
-  path, query) => {
+    path, query) => {
   if (!path || path.length < 2) {
     return null;
   }
-  
-  const center = georeferenceMapCenter(x, y, z,h);
+
+  const center = georeferenceMapCenter(x, y, z, h);
 
   const canvas = createCanvas(scale * w, scale * h);
   const ctx = canvas.getContext('2d');
@@ -314,7 +315,7 @@ export const serve_rendered = {
           bearing: bearing,
           pitch: pitch,
           width: width,
-          height: height,
+          height: height
         };
         if (z === 0) {
           params.width *= 2;
@@ -354,18 +355,18 @@ export const serve_rendered = {
             raw: {
               width: params.width * scale,
               height: params.height * scale,
-              channels: 4,
-            },
+              channels: 4
+            }
           });
 
           if (z > 2 && tileMargin > 0) {
             const [_, y] = mercator.px(params.center, z);
-            let yoffset = Math.max(Math.min(0, y - 128 - tileMargin), y + 128 + tileMargin - Math.pow(2, z + 8));
+            const yoffset = Math.max(Math.min(0, y - 128 - tileMargin), y + 128 + tileMargin - Math.pow(2, z + 8));
             image.extract({
               left: tileMargin * scale,
               top: (tileMargin + yoffset) * scale,
               width: width * scale,
-              height: height * scale,
+              height: height * scale
             });
           }
 
@@ -407,7 +408,7 @@ export const serve_rendered = {
 
             res.set({
               'Last-Modified': item.lastModified,
-              'Content-Type': `image/${format}`,
+              'Content-Type': `image/${format}`
             });
             return res.status(200).send(buffer);
           });
@@ -440,7 +441,7 @@ export const serve_rendered = {
       const tileSize = 256;
       const tileCenter = mercator.ll([
         ((x + 0.5) / (1 << z)) * (256 << z),
-        ((y + 0.5) / (1 << z)) * (256 << z),
+        ((y + 0.5) / (1 << z)) * (256 << z)
       ], z);
       return respondImage(item, z, tileCenter[0], tileCenter[1], 0, 0, tileSize, tileSize, scale, format, res, next);
     });
@@ -483,9 +484,9 @@ export const serve_rendered = {
           y = ll[1];
         }
 
-        if(req.query.marker || req.query.markers) {
+        if (req.query.marker || req.query.markers) {
           let markers = extractMarkerFromQuery(req.query, transformer);
-          markers = markers === null ? [[x,y]] : markers;
+          markers = markers === null ? [[x, y]] : markers;
           const overlay = renderMarkerOverlay(x, y, z, w, h, scale, markers);
           return respondImage(item, z, x, y, bearing, pitch, w, h, scale, format, res, next, overlay);
         }
@@ -696,7 +697,7 @@ export const serve_rendered = {
               request({
                 url: req.url,
                 encoding: null,
-                gzip: true,
+                gzip: true
               }, (err, res, body) => {
                 const parts = url.parse(req.url);
                 const extension = path.extname(parts.pathname).toLowerCase();
@@ -722,7 +723,7 @@ export const serve_rendered = {
                 callback(null, response);
               });
             }
-          },
+          }
         });
         renderer.load(styleJSON);
         createCallback(null, renderer);
@@ -733,7 +734,7 @@ export const serve_rendered = {
         create: createRenderer.bind(null, ratio),
         destroy: (renderer) => {
           renderer.release();
-        },
+        }
       });
     };
 
@@ -777,7 +778,7 @@ export const serve_rendered = {
       'maxzoom': 20,
       'bounds': [-180, -85.0511, 180, 85.0511],
       'format': 'png',
-      'type': 'baselayer',
+      'type': 'baselayer'
     };
     const attributionOverride = params.tilejson && params.tilejson.attribution;
     Object.assign(tileJSON, params.tilejson || {});
@@ -790,7 +791,7 @@ export const serve_rendered = {
       map,
       dataProjWGStoInternalWGS: null,
       lastModified: new Date().toUTCString(),
-      watermark: params.watermark || options.watermark,
+      watermark: params.watermark || options.watermark
     };
     repo[id] = repoobj;
 
@@ -826,7 +827,7 @@ export const serve_rendered = {
           if (!mbtilesFileStats.isFile() || mbtilesFileStats.size === 0) {
             throw Error(`Not valid MBTiles file: ${mbtilesFile}`);
           }
-          map.sources[name] = new MBTiles(mbtilesFile + '?mode=ro', err => {
+          map.sources[name] = new MBTiles(mbtilesFile + '?mode=ro', (err) => {
             map.sources[name].getInfo((err, info) => {
               if (err) {
                 console.error(err);
@@ -845,7 +846,7 @@ export const serve_rendered = {
               source.type = type;
               source.tiles = [
                 // meta url which will be detected when requested
-                `mbtiles://${name}/{z}/{x}/{y}.${info.format || 'pbf'}`,
+                `mbtiles://${name}/{z}/{x}/{y}.${info.format || 'pbf'}`
               ];
               delete source.scheme;
 

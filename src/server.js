@@ -387,7 +387,7 @@ export function server(opts) {
     }
     return {
       styles: Object.keys(styles).length ? styles : null,
-      data: Object.keys(data).length ? data : null,
+      data: Object.keys(data).length ? data : null
     };
   });
 
@@ -462,7 +462,7 @@ export function server(opts) {
   return {
     app: app,
     server: server,
-    startupPromise: startupPromise,
+    startupPromise: startupPromise
   };
 }
 

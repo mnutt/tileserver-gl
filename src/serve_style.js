@@ -150,9 +150,9 @@ export const serve_style = {
       styleJSON,
       spritePath,
       publicUrl,
-      name: styleJSON.name,
+      name: styleJSON.name
     };
 
     return true;
-  },
+  }
 };

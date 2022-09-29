@@ -12,7 +12,7 @@
 
 // SYNC THE `light` FOLDER
 
-import child_process from 'child_process'
+import child_process from 'child_process';
 child_process.execSync('rsync -av --exclude="light" --exclude=".git" --exclude="node_modules" --delete . light', {
   stdio: 'inherit'
 });
@@ -23,7 +23,7 @@ import path from 'path';
 import {fileURLToPath} from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const packageJson = JSON.parse(fs.readFileSync(__dirname + '/package.json', 'utf8'))
+const packageJson = JSON.parse(fs.readFileSync(__dirname + '/package.json', 'utf8'));
 
 packageJson.name += '-light';
 packageJson.description = 'Map tile server for JSON GL styles - serving vector tiles';
