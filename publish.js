@@ -34,7 +34,7 @@ delete packageJson.dependencies['sharp'];
 delete packageJson.optionalDependencies;
 delete packageJson.devDependencies;
 
-packageJson.engines.node = '>= 14.13.0';
+packageJson.engines.node = '>= 14.15.0';
 
 const str = JSON.stringify(packageJson, undefined, 2);
 fs.writeFileSync('light/package.json', str);
@@ -50,11 +50,11 @@ if (process.argv.length > 2 && process.argv[2] == '--no-publish') {
 /* PUBLISH */
 
 // tileserver-gl
-require('child_process').execSync('npm publish . --access public', {
+child_process.execSync('npm publish . --access public', {
   stdio: 'inherit'
 });
 
 // tileserver-gl-light
-require('child_process').execSync('npm publish light --access public', {
+child_process.execSync('npm publish ./light --access public', {
   stdio: 'inherit'
 });
