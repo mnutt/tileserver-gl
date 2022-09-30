@@ -15,7 +15,7 @@ jobs:
       - name: Setup node env 📦
         uses: actions/setup-node@v3
         with:
-          node-version: 10
+          node-version-file: 'package.json'
 
       - name: Check out repository ✨ (non-dependabot)
         if: ${{ github.actor != 'dependabot[bot]' }}
