@@ -26,15 +26,15 @@ jobs:
     name: 'CI'
     needs:
       - extract-branch
-    uses: acalcutt/tileserver-gl/.github/workflows/ci.yml@master
+    uses: acalcutt/tileserver-gl/.github/workflows/ci.yml@main
   automerger:
     name: 'Auto Merge Bot PRs'
     needs:
       - ci
     if: ${{ github.event_name == 'pull_request' && github.event.pull_request.user.login == 'dependabot[bot]' }}
-    uses: acalcutt/tileserver-gl/.github/workflows/automerger.yml@master
+    uses: acalcutt/tileserver-gl/.github/workflows/automerger.yml@main
   ct:
     name: 'CT'
     needs:
       - extract-branch
-    uses: acalcutt/tileserver-gl/.github/workflows/ct.yml@master
+    uses: acalcutt/tileserver-gl/.github/workflows/ct.yml@main
