@@ -1,63 +1,57 @@
-FROM node:16-bullseye AS builder
-
-RUN export DEBIAN_FRONTEND=noninteractive \
-  && apt-get -qq update \
-  && apt-get -y --no-install-recommends install \
-      apt-transport-https \
-      curl \
-      unzip \
-      build-essential \
-      python \
-      libcairo2-dev \
-      libgles2-mesa-dev \
-      libgbm-dev \
-      libprotobuf-dev \
-  && apt-get -y --purge autoremove \
-  && apt-get clean \
-  && rm -rf /var/lib/apt/lists/*
-
-COPY . /usr/src/app
+FROM ubuntu:focal AS builder
 
 ENV NODE_ENV="production"
+
+RUN set -ex; \
+    export DEBIAN_FRONTEND=noninteractive; \
+    apt-get -qq update; \
+    apt-get -y --no-install-recommends install \
+      ca-certificates \
+      wget; \
+    wget -qO- https://deb.nodesource.com/setup_16.x | bash; \
+    apt-get install -y nodejs; \
+    apt-get -y remove wget; \
+    apt-get -y --purge autoremove; \
+    apt-get clean; \
+    rm -rf /var/lib/apt/lists/*;
+  
+COPY . /usr/src/app
 
 RUN cd /usr/src/app && npm install --production
 
+FROM ubuntu:focal AS final
 
-FROM node:16-bullseye-slim AS final
+ENV \
+    NODE_ENV="production" \
+    CHOKIDAR_USEPOLLING=1 \
+    CHOKIDAR_INTERVAL=500
 
-RUN export DEBIAN_FRONTEND=noninteractive \
-  && apt-get -qq update \
-  && apt-get -y --no-install-recommends install \
-      libgles2-mesa \
-      libegl1 \
+RUN set -ex; \
+    export DEBIAN_FRONTEND=noninteractive; \
+    groupadd -r node; \
+    useradd -r -g node node; \
+    apt-get -qq update; \
+    apt-get -y --no-install-recommends install \
+      ca-certificates \
+      wget \
+      pkg-config \
       xvfb \
-      xauth \
-      libopengl0 \
-      libcurl4 \
-      curl \
+      libglfw3-dev \
       libuv1-dev \
-      libc6-dev \
-      libcap2-bin \
-  && apt-get -y --purge autoremove \
-  && apt-get clean \
-  && rm -rf /var/lib/apt/lists/*
-  
-RUN curl http://archive.ubuntu.com/ubuntu/pool/main/libj/libjpeg-turbo/libjpeg-turbo8_2.0.3-0ubuntu1_amd64.deb --output libjpeg-turbo8_2.0.3-0ubuntu1_amd64.deb
-RUN apt install ./libjpeg-turbo8_2.0.3-0ubuntu1_amd64.deb
-RUN curl http://archive.ubuntu.com/ubuntu/pool/main/i/icu/libicu66_66.1-2ubuntu2_amd64.deb --output libicu66_66.1-2ubuntu2_amd64.deb
-RUN apt install ./libicu66_66.1-2ubuntu2_amd64.deb
+      libjpeg-turbo8 \
+      libicu66 \
+      libcurl4-openssl-dev; \
+    wget -qO- https://deb.nodesource.com/setup_16.x | bash; \
+    apt-get install -y nodejs; \
+    apt-get -y remove wget; \
+    apt-get -y --purge autoremove; \
+    apt-get clean; \
+    rm -rf /var/lib/apt/lists/*;
 
 COPY --from=builder /usr/src/app /app
 
-ENV NODE_ENV="production"
-ENV CHOKIDAR_USEPOLLING=1
-ENV CHOKIDAR_INTERVAL=500
-
 VOLUME /data
 WORKDIR /data
-
-# allow node to listen on low ports
-RUN setcap 'cap_net_bind_service=+ep' /usr/local/bin/node
 
 EXPOSE 80
 
