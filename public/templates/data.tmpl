@@ -35,6 +35,9 @@
   <div id="layerList"></div>
   <pre id="propertyList"></pre>
   <script>
+  var keyMatch = location.search.match(/[\?\&]key=([^&]+)/i);
+  var keyParam = keyMatch ? '?key=' + keyMatch[1] : '';
+    
   var map = new maplibregl.Map({
     container: 'map',
     hash: true,
@@ -44,7 +47,7 @@
       sources: {
         'vector_layer_': {
           type: 'vector',
-          url: '{{public_url}}data/{{id}}.json{{&key_query}}'
+          url: '{{public_url}}data/{{id}}.json' + keyParam
         }
       },
       layers: []
@@ -76,11 +79,14 @@
   <h1 style="display:none;">{{name}}</h1>
   <div id='map'></div>
   <script>
+  var keyMatch = location.search.match(/[\?\&]key=([^&]+)/i);
+  var keyParam = keyMatch ? '?key=' + keyMatch[1] : '';    
+    
 	var map = L.map('map', { zoomControl: false });
 	new L.Control.Zoom({ position: 'topright' }).addTo(map);
 
 	var tile_urls = [], tile_attribution, tile_minzoom, tile_maxzoom;
-	var url = '{{public_url}}data/{{id}}.json{{&key_query}}';
+	var url = '{{public_url}}data/{{id}}.json' + keyParam;
 	var req = new XMLHttpRequest();
 	req.overrideMimeType("application/json");
 	req.open('GET', url, true);

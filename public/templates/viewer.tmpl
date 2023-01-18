@@ -26,14 +26,15 @@
       q.indexOf('vector') >= 0 ? 'vector' :
         (q.indexOf('raster') >= 0 ? 'raster' :
           (maplibregl.supported() ? 'vector' : 'raster'));
+
     var keyMatch = location.search.match(/[\?\&]key=([^&]+)/i);
-    var key = keyMatch ? '?key=' + keyMatch[1] : '';
+    var keyParam = keyMatch ? '?key=' + keyMatch[1] : '';    
 
     if (preference == 'vector') {
-      maplibregl.setRTLTextPlugin('{{public_url}}mapbox-gl-rtl-text.js' + key);
+      maplibregl.setRTLTextPlugin('{{public_url}}mapbox-gl-rtl-text.js' + keyParam);
       var map = new maplibregl.Map({
         container: 'map',
-        style: '{{public_url}}styles/{{id}}/style.json' + key,
+        style: '{{public_url}}styles/{{id}}/style.json' + keyParam,
         hash: true,
         maplibreLogo: true
       });
@@ -52,7 +53,7 @@
 		new L.Control.Zoom({ position: 'topright' }).addTo(map);
 		
 		var tile_urls = [], tile_attribution, tile_minzoom, tile_maxzoom;
-		var url = '{{public_url}}styles/{{id}}.json' + key;
+		var url = '{{public_url}}styles/{{id}}.json' + keyParam;
 		var req = new XMLHttpRequest();
 		req.overrideMimeType("application/json");
 		req.open('GET', url, true);
