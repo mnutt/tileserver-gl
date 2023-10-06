@@ -9,6 +9,7 @@ import request from 'request';
 import { server } from './server.js';
 
 import MBTiles from '@mapbox/mbtiles';
+import PMTiles from 'pmtiles';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -72,6 +73,113 @@ const startServer = (configPath, config) => {
     logFormat: opts.log_format,
     publicUrl: publicUrl,
   });
+};
+
+var PMTilesLocalSource = class {
+  constructor(file) {
+    this.file = file;
+  }
+  getKey() {
+    return this.file.name;
+  }
+  async getBytes(offset, length) {
+    const blob = this.file.slice(offset, offset + length);
+    return { data: blob };
+  }
+};
+
+const startWithPMTiles = async (pmtilesFile) => {
+  console.log(`[INFO] Automatically creating config file for ${pmtilesFile}`);
+  console.log(`[INFO] Only a basic preview style will be used.`);
+  console.log(
+    `[INFO] See documentation to learn how to create config.json file.`,
+  );
+
+  pmtilesFile = path.resolve(process.cwd(), pmtilesFile);
+
+  const pmtilesStats = fs.statSync(pmtilesFile);
+  if (!pmtilesStats.isFile() || pmtilesStats.size === 0) {
+    console.log(`ERROR: Not valid pmtiles file: ${pmtilesFile}`);
+    process.exit(1);
+  }
+  const buffer = fs.readFileSync(pmtilesFile)
+  const arrayBuffer = new ArrayBuffer(buffer.length);
+  const view = new Uint8Array(arrayBuffer);
+  for (let i = 0; i < buffer.length; ++i) {
+    view[i] = buffer[i];
+  }
+
+  let source = new PMTilesLocalSource(arrayBuffer);
+  let pmtiles = new PMTiles.PMTiles(source);
+
+  const header = await pmtiles.getHeader();
+  const info = await pmtiles.getMetadata();
+  const bounds = [header.minLat, header.minLon, header.maxLat, header.maxLon]
+  console.log(header);
+  console.log(info);
+  console.log(bounds);
+
+  const styleDir = path.resolve(
+    __dirname,
+    '../node_modules/tileserver-gl-styles/',
+  );
+
+  const config = {
+    options: {
+      paths: {
+        root: styleDir,
+        fonts: 'fonts',
+        styles: 'styles',
+        mbtiles: path.dirname(pmtilesFile),
+      },
+    },
+    styles: {},
+    data: {},
+  };
+
+  if (
+    info.format === 'pbf' &&
+    info.name.toLowerCase().indexOf('openmaptiles') > -1
+  ) {
+    config['data'][`v3`] = {
+      mbtiles: path.basename(pmtilesFile),
+    };
+
+    const styles = fs.readdirSync(path.resolve(styleDir, 'styles'));
+    for (const styleName of styles) {
+      const styleFileRel = styleName + '/style.json';
+      const styleFile = path.resolve(styleDir, 'styles', styleFileRel);
+      if (fs.existsSync(styleFile)) {
+        config['styles'][styleName] = {
+          style: styleFileRel,
+          tilejson: {
+            bounds: bounds,
+          },
+        };
+      }
+    }
+  } else {
+    console.log(
+      `WARN: MBTiles not in "openmaptiles" format. Serving raw data only...`,
+    );
+    config['data'][
+      (info.id || 'mbtiles')
+        .replace(/\//g, '_')
+        .replace(/:/g, '_')
+        .replace(/\?/g, '_')
+    ] = {
+      mbtiles: path.basename(pmtilesFile),
+    };
+  }
+
+  if (opts.verbose) {
+    console.log(JSON.stringify(config, undefined, 2));
+  } else {
+    console.log('Run with --verbose to see the config file here.');
+  }
+
+  return startServer(null, config);
+
 };
 
 const startWithMBTiles = (mbtilesFile) => {
@@ -186,7 +294,7 @@ fs.stat(path.resolve(opts.config), (err, stats) => {
       }
       if (mbtiles) {
         console.log(`No MBTiles specified, using ${mbtiles}`);
-        return startWithMBTiles(mbtiles);
+        return startWithPMTiles(mbtiles);
       } else {
         const url =
           'https://github.com/maptiler/tileserver-gl/releases/download/v1.3.0/zurich_switzerland.mbtiles';
@@ -199,7 +307,7 @@ fs.stat(path.resolve(opts.config), (err, stats) => {
       }
     }
     if (mbtiles) {
-      return startWithMBTiles(mbtiles);
+      return startWithPMTiles(mbtiles);
     }
   } else {
     console.log(`Using specified config file from ${opts.config}`);
