@@ -10,7 +10,7 @@ import MBTiles from '@mapbox/mbtiles';
 import Pbf from 'pbf';
 import { VectorTile } from '@mapbox/vector-tile';
 
-import { getTileUrls, fixTileJSONCenter } from './utils.js';
+import { getTileUrls, fixTileJSONCenter, GetPMtilesInfo } from './utils.js';
 
 export const serve_data = {
   init: (options, repo) => {
@@ -137,7 +137,7 @@ export const serve_data = {
 
     return app;
   },
-  add: (options, repo, params, id, publicUrl) => {
+  add: async (options, repo, params, id, publicUrl) => {
     const mbtilesFile = path.resolve(options.paths.mbtiles, params.mbtiles);
     let tileJSON = {
       tiles: params.domains || options.domains,
@@ -147,45 +147,73 @@ export const serve_data = {
     if (!mbtilesFileStats.isFile() || mbtilesFileStats.size === 0) {
       throw Error(`Not valid MBTiles file: ${mbtilesFile}`);
     }
+
+    const extension = mbtilesFile.split('.').pop().toLowerCase();
     let source;
-    const sourceInfoPromise = new Promise((resolve, reject) => {
-      source = new MBTiles(mbtilesFile + '?mode=ro', (err) => {
-        if (err) {
-          reject(err);
-          return;
-        }
-        source.getInfo((err, info) => {
+    if (extension === 'pmtiles') {
+      const info = await GetPMtilesInfo(mbtilesFile);
+      const metadata = info.metadata
+      source = info.source
+
+      tileJSON['name'] = id;
+      tileJSON['format'] = 'pbf';
+      tileJSON['bounds'] = info.bounds;
+      tileJSON['center'] = info.center;
+      Object.assign(tileJSON, metadata);
+
+      tileJSON['tilejson'] = '2.0.0';
+      delete tileJSON['filesize'];
+      delete tileJSON['mtime'];
+      delete tileJSON['scheme'];
+
+      Object.assign(tileJSON, params.tilejson || {});
+      fixTileJSONCenter(tileJSON);
+
+      if (options.dataDecoratorFunc) {
+        tileJSON = options.dataDecoratorFunc(id, 'tilejson', tileJSON);
+      }
+    } else {
+      const sourceInfoPromise = new Promise((resolve, reject) => {
+        source = new MBTiles(mbtilesFile + '?mode=ro', (err) => {
           if (err) {
             reject(err);
             return;
           }
-          tileJSON['name'] = id;
-          tileJSON['format'] = 'pbf';
+          source.getInfo((err, info) => {
+            if (err) {
+              reject(err);
+              return;
+            }
+            tileJSON['name'] = id;
+            tileJSON['format'] = 'pbf';
 
-          Object.assign(tileJSON, info);
+            Object.assign(tileJSON, info);
 
-          tileJSON['tilejson'] = '2.0.0';
-          delete tileJSON['filesize'];
-          delete tileJSON['mtime'];
-          delete tileJSON['scheme'];
+            tileJSON['tilejson'] = '2.0.0';
+            delete tileJSON['filesize'];
+            delete tileJSON['mtime'];
+            delete tileJSON['scheme'];
 
-          Object.assign(tileJSON, params.tilejson || {});
-          fixTileJSONCenter(tileJSON);
+            Object.assign(tileJSON, params.tilejson || {});
+            fixTileJSONCenter(tileJSON);
 
-          if (options.dataDecoratorFunc) {
-            tileJSON = options.dataDecoratorFunc(id, 'tilejson', tileJSON);
-          }
-          resolve();
+            if (options.dataDecoratorFunc) {
+              tileJSON = options.dataDecoratorFunc(id, 'tilejson', tileJSON);
+            }
+            resolve();
+          });
         });
       });
-    });
 
-    return sourceInfoPromise.then(() => {
-      repo[id] = {
-        tileJSON,
-        publicUrl,
-        source,
-      };
-    });
+      await sourceInfoPromise;
+    }
+
+    console.log(tileJSON);
+
+    repo[id] = {
+      tileJSON,
+      publicUrl,
+      source,
+    };
   },
 };

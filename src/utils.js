@@ -191,5 +191,6 @@ export const GetPMtilesInfo = async (pmtilesFile) => {
   const header = await pmtiles.getHeader();
   const metadata = await pmtiles.getMetadata();
   const bounds = [header.minLat, header.minLon, header.maxLat, header.maxLon]
-  return { header: header, metadata: metadata, bounds: bounds };
+  const center = [header.centerLon, header.centerLat, header.centerZoom]
+  return { source: pmtiles, header: header, metadata: metadata, bounds: bounds, center: center };
 }
