@@ -7,9 +7,9 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import request from 'request';
 import { server } from './server.js';
+import { GetPMtilesInfo } from './utils.js';
 
 import MBTiles from '@mapbox/mbtiles';
-import PMTiles from 'pmtiles';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -102,22 +102,11 @@ const startWithPMTiles = async (pmtilesFile) => {
     console.log(`ERROR: Not valid pmtiles file: ${pmtilesFile}`);
     process.exit(1);
   }
-  const buffer = fs.readFileSync(pmtilesFile)
-  const arrayBuffer = new ArrayBuffer(buffer.length);
-  const view = new Uint8Array(arrayBuffer);
-  for (let i = 0; i < buffer.length; ++i) {
-    view[i] = buffer[i];
-  }
 
-  let source = new PMTilesLocalSource(arrayBuffer);
-  let pmtiles = new PMTiles.PMTiles(source);
+  const info = await GetPMtilesInfo(pmtilesFile);
+  const metadata = info.metadata
 
-  const header = await pmtiles.getHeader();
-  const info = await pmtiles.getMetadata();
-  const bounds = [header.minLat, header.minLon, header.maxLat, header.maxLon]
-  console.log(header);
   console.log(info);
-  console.log(bounds);
 
   const styleDir = path.resolve(
     __dirname,
@@ -138,8 +127,8 @@ const startWithPMTiles = async (pmtilesFile) => {
   };
 
   if (
-    info.format === 'pbf' &&
-    info.name.toLowerCase().indexOf('openmaptiles') > -1
+    metadata.format === 'pbf' &&
+    metadata.name.toLowerCase().indexOf('openmaptiles') > -1
   ) {
     config['data'][`v3`] = {
       mbtiles: path.basename(pmtilesFile),
@@ -153,7 +142,7 @@ const startWithPMTiles = async (pmtilesFile) => {
         config['styles'][styleName] = {
           style: styleFileRel,
           tilejson: {
-            bounds: bounds,
+            bounds: info.bounds,
           },
         };
       }
@@ -163,7 +152,7 @@ const startWithPMTiles = async (pmtilesFile) => {
       `WARN: MBTiles not in "openmaptiles" format. Serving raw data only...`,
     );
     config['data'][
-      (info.id || 'mbtiles')
+      (metadata.id || 'mbtiles')
         .replace(/\//g, '_')
         .replace(/:/g, '_')
         .replace(/\?/g, '_')

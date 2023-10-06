@@ -5,6 +5,7 @@ import fs from 'node:fs';
 
 import clone from 'clone';
 import glyphCompose from '@mapbox/glyph-pbf-composite';
+import PMTiles from 'pmtiles';
 
 /**
  * Generate new URL object
@@ -163,3 +164,32 @@ export const getFontsPbf = (
 
   return Promise.all(queue).then((values) => glyphCompose.combine(values));
 };
+
+const PMTilesLocalSource = class {
+  constructor(file) {
+    this.file = file;
+  }
+  getKey() {
+    return this.file.name;
+  }
+  async getBytes(offset, length) {
+    const blob = this.file.slice(offset, offset + length);
+    return { data: blob };
+  }
+};
+
+export const GetPMtilesInfo = async (pmtilesFile) => {
+  const buffer = fs.readFileSync(pmtilesFile)
+  const arrayBuffer = new ArrayBuffer(buffer.length);
+  const view = new Uint8Array(arrayBuffer);
+  for (let i = 0; i < buffer.length; ++i) {
+    view[i] = buffer[i];
+  }
+  let source = new PMTilesLocalSource(arrayBuffer);
+  let pmtiles = new PMTiles.PMTiles(source);
+
+  const header = await pmtiles.getHeader();
+  const metadata = await pmtiles.getMetadata();
+  const bounds = [header.minLat, header.minLon, header.maxLat, header.maxLon]
+  return { header: header, metadata: metadata, bounds: bounds };
+}
