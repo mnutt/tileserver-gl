@@ -253,11 +253,39 @@ export const GetPMtilesInfo = async (pmtilesFile) => {
   const dec = new TextDecoder("utf-8");
   var metadata = JSON.parse(dec.decode(decompressed));
 
-  const bounds = [header.minLat, header.minLon, header.maxLat, header.maxLon]
-  const center = [header.centerLon, header.centerLat, header.centerLat]
-  metadata['bounds'] = header.bounds;
-  metadata['center'] = header.center;
+  var tileType
+  switch (header.tileType) {
+    case 0:
+      tileType = "Unknown"
+      break;
+    case 1:
+      tileType = "pbf"
+      break;
+    case 2:
+      tileType = "png"
+      break;
+    case 3:
+      tileType = "jpg"
+      break;
+    case 4:
+      tileType = "webp"
+      break;
+    case 5:
+      tileType = "avif"
+      break;
+  }
+  metadata['format'] = tileType;
+
+  if(header.minLat != 0 && header.minLon != 0 && header.maxLat != 0 && header.maxLon != 0) {
+    const bounds = [header.minLat, header.minLon, header.maxLat, header.maxLon]
+    metadata['bounds'] = bounds;
+  }
+  if(header.centerLon != 0 && header.centerLat != 0) {
+    const center = [header.centerLon, header.centerLat, header.centerLat]
+    metadata['center'] = center;
+  }
   metadata['minzoom'] = header.minZoom;
   metadata['maxzoom'] = header.maxZoom;
+
   return { header: header, metadata: metadata };
 }
