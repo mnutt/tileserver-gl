@@ -7,10 +7,11 @@ import zlib from 'zlib';
 import clone from 'clone';
 import express from 'express';
 import MBTiles from '@mapbox/mbtiles';
+import PMTiles from 'pmtiles';
 import Pbf from 'pbf';
 import { VectorTile } from '@mapbox/vector-tile';
 
-import { getTileUrls, fixTileJSONCenter, GetPMtilesInfo } from './utils.js';
+import { getTileUrls, fixTileJSONCenter, GetPMtilesInfo, GetPMtilesTile } from './utils.js';
 
 export const serve_data = {
   init: (options, repo) => {
@@ -18,12 +19,14 @@ export const serve_data = {
 
     app.get(
       '/:id/:z(\\d+)/:x(\\d+)/:y(\\d+).:format([\\w.]+)',
-      (req, res, next) => {
+      async (req, res, next) => {
         const item = repo[req.params.id];
+        console.log(item);
         if (!item) {
           return res.sendStatus(404);
         }
         const tileJSONFormat = item.tileJSON.format;
+        const tileJSONExtension = item.tileJSON.extension;
         const z = req.params.z | 0;
         const x = req.params.x | 0;
         const y = req.params.y | 0;
@@ -48,6 +51,66 @@ export const serve_data = {
         ) {
           return res.status(404).send('Out of bounds');
         }
+        if (tileJSONExtension === 'pmtiles') {
+          let isGzipped;
+          let tileinfo = await GetPMtilesTile(item.source, z, x, y);
+          let data = tileinfo.data
+          let headers = tileinfo.header
+          console.log(data)
+          console.log(headers)
+          if (data == undefined) {
+            return res.status(404).send('Not found');
+          } else {
+            if (tileJSONFormat === 'pbf') {
+              isGzipped =
+                data.slice(0, 2).indexOf(Buffer.from([0x1f, 0x8b])) === 0;
+              if (options.dataDecoratorFunc) {
+                if (isGzipped) {
+                  data = zlib.unzipSync(data);
+                  isGzipped = false;
+                }
+                data = options.dataDecoratorFunc(id, 'data', data, z, x, y);
+              }
+            }
+            if (format === 'pbf') {
+              headers['Content-Type'] = 'application/x-protobuf';
+            } else if (format === 'geojson') {
+              headers['Content-Type'] = 'application/json';
+
+              if (isGzipped) {
+                data = zlib.unzipSync(data);
+                isGzipped = false;
+              }
+
+              const tile = new VectorTile(new Pbf(data));
+              const geojson = {
+                type: 'FeatureCollection',
+                features: [],
+              };
+              for (const layerName in tile.layers) {
+                const layer = tile.layers[layerName];
+                for (let i = 0; i < layer.length; i++) {
+                  const feature = layer.feature(i);
+                  const featureGeoJSON = feature.toGeoJSON(x, y, z);
+                  featureGeoJSON.properties.layer = layerName;
+                  geojson.features.push(featureGeoJSON);
+                }
+              }
+              data = JSON.stringify(geojson);
+            }
+            delete headers['ETag']; // do not trust the tile ETag -- regenerate
+            headers['Content-Encoding'] = 'gzip';
+            res.set(headers);
+
+            if (!isGzipped) {
+              data = zlib.gzipSync(data);
+              isGzipped = true;
+            }
+
+            return res.status(200).send(data);
+          }
+
+        } else {
         item.source.getTile(z, x, y, (err, data, headers) => {
           let isGzipped;
           if (err) {
@@ -112,7 +175,9 @@ export const serve_data = {
               return res.status(200).send(data);
             }
           }
+          
         });
+      }
       },
     );
 
@@ -152,11 +217,12 @@ export const serve_data = {
     let source;
     if (extension === 'pmtiles') {
       const info = await GetPMtilesInfo(mbtilesFile);
-      const metadata = info.metadata
-      source = info.source
+      const metadata = info.metadata;
+      source = mbtilesFile;
 
       tileJSON['name'] = id;
       tileJSON['format'] = 'pbf';
+      tileJSON['extension'] = 'pmtiles';
       Object.assign(tileJSON, metadata);
 
       tileJSON['tilejson'] = '2.0.0';
@@ -184,6 +250,7 @@ export const serve_data = {
             }
             tileJSON['name'] = id;
             tileJSON['format'] = 'pbf';
+            tileJSON['extension'] = 'mbtiles';
 
             Object.assign(tileJSON, info);
 

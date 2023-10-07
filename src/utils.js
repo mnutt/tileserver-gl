@@ -166,7 +166,7 @@ export const getFontsPbf = (
   return Promise.all(queue).then((values) => glyphCompose.combine(values));
 };
 
-function readBytes(fd, sharedBuffer, offset) {
+function ReadFileBytes(fd, sharedBuffer, offset) {
   return new Promise((resolve, reject) => {
       fs.read(
           fd, 
@@ -191,7 +191,7 @@ const ReadBytes = async (filePath, offset, size) => {
   
   for(let i = 0; i < size; i++) {
       let postion = offset + i
-      await readBytes(fd, sharedBuffer, postion);
+      await ReadFileBytes(fd, sharedBuffer, postion);
       bytesRead = (i + 1) * size;
       if(bytesRead > stats.size) {
          // When we reach the end of file, 
@@ -201,7 +201,7 @@ const ReadBytes = async (filePath, offset, size) => {
       if(bytesRead === size) {break;}
   }
 
-  return sharedBuffer;
+  return BufferToArrayBuffer(sharedBuffer);
 }
 
 function BufferToArrayBuffer(buffer) {
@@ -210,8 +210,16 @@ function BufferToArrayBuffer(buffer) {
   for (let i = 0; i < buffer.length; ++i) {
     view[i] = buffer[i];
   }
-  const v = new DataView(arrayBuffer);
   return arrayBuffer;
+}
+
+function ArrayBufferToBuffer(ab) {
+  var buffer = Buffer.alloc(ab.byteLength);
+  var view = new Uint8Array(ab);
+  for (var i = 0; i < buffer.length; ++i) {
+      buffer[i] = view[i];
+  }
+  return buffer;
 }
 
 const PMTilesLocalSource = class {
@@ -227,31 +235,35 @@ const PMTilesLocalSource = class {
   }
 };
 
-export const GetPMtilesInfo = async (pmtilesFile) => {
-  var buffer = await ReadBytes(pmtilesFile, 0, 16384)
-  const headerBuf = BufferToArrayBuffer(buffer);
-  //console.log(headerBuf)
-  const header = PMTiles.bytesToHeader(headerBuf, undefined)
-  const compression = header.internalCompression
-  //console.log(header);
+export const GetPMtilesHeader = async (pmtilesFile) => {
+  var buffer = await ReadBytes(pmtilesFile, 0, 127)
+  const header = PMTiles.bytesToHeader(buffer, undefined)
+  return header
+}
 
-  const jsonMetadataOffset = header.jsonMetadataOffset;
-  const jsonMetadataLength = header.jsonMetadataLength;
-  var metadataBytes = await ReadBytes(pmtilesFile, jsonMetadataOffset, jsonMetadataLength)
-  const metadataBuf = BufferToArrayBuffer(metadataBytes);
-
-  //console.log(metadataBytes)
+export const GetPMtilesDecompress = async (header, buffer) => {
+  const compression = header.internalCompression;
   var decompressed;
   if (compression === PMTiles.Compression.None || compression === PMTiles.Compression.Unknown) {
-    decompressed = metadataBuf;
+    decompressed = buffer;
   } else if (compression === PMTiles.Compression.Gzip) {
-    decompressed = fflate.decompressSync(new Uint8Array(metadataBuf));
+    decompressed = fflate.decompressSync(new Uint8Array(buffer));
   } else {
     throw Error("Compression method not supported");
   }
-  //console.log(metadata)
+
+  return decompressed
+}
+
+export const GetPMtilesInfo = async (pmtilesFile) => {
+  var header = await GetPMtilesHeader(pmtilesFile)
+  const jsonMetadataOffset = header.jsonMetadataOffset;
+  const jsonMetadataLength = header.jsonMetadataLength;
+  const compression = header.internalCompression;
+  const metadataBytes = await ReadBytes(pmtilesFile, jsonMetadataOffset, jsonMetadataLength)
+  const metadataDecomp = await GetPMtilesDecompress(header, metadataBytes)
   const dec = new TextDecoder("utf-8");
-  var metadata = JSON.parse(dec.decode(decompressed));
+  const metadata = JSON.parse(dec.decode(metadataDecomp));
 
   var tileType
   switch (header.tileType) {
@@ -288,4 +300,151 @@ export const GetPMtilesInfo = async (pmtilesFile) => {
   metadata['maxzoom'] = header.maxZoom;
 
   return { header: header, metadata: metadata };
+}
+
+function toNum(low, high) {
+  return (high >>> 0) * 0x100000000 + (low >>> 0);
+}
+
+function readVarintRemainder(l, p) {
+  const buf = p.buf;
+  let h, b;
+  b = buf[p.pos++];
+  h = (b & 0x70) >> 4;
+  if (b < 0x80) return toNum(l, h);
+  b = buf[p.pos++];
+  h |= (b & 0x7f) << 3;
+  if (b < 0x80) return toNum(l, h);
+  b = buf[p.pos++];
+  h |= (b & 0x7f) << 10;
+  if (b < 0x80) return toNum(l, h);
+  b = buf[p.pos++];
+  h |= (b & 0x7f) << 17;
+  if (b < 0x80) return toNum(l, h);
+  b = buf[p.pos++];
+  h |= (b & 0x7f) << 24;
+  if (b < 0x80) return toNum(l, h);
+  b = buf[p.pos++];
+  h |= (b & 0x01) << 31;
+  if (b < 0x80) return toNum(l, h);
+  throw new Error("Expected varint not more than 10 bytes");
+}
+
+export function readVarint(p) {
+  const buf = p.buf;
+  let val, b;
+
+  b = buf[p.pos++];
+  val = b & 0x7f;
+  if (b < 0x80) return val;
+  b = buf[p.pos++];
+  val |= (b & 0x7f) << 7;
+  if (b < 0x80) return val;
+  b = buf[p.pos++];
+  val |= (b & 0x7f) << 14;
+  if (b < 0x80) return val;
+  b = buf[p.pos++];
+  val |= (b & 0x7f) << 21;
+  if (b < 0x80) return val;
+  b = buf[p.pos];
+  val |= (b & 0x0f) << 28;
+
+  return readVarintRemainder(val, p);
+}
+
+function deserializeIndex(buffer) {
+  const p = { buf: new Uint8Array(buffer), pos: 0 };
+  const numEntries = readVarint(p);
+
+  var entries = [];
+
+  let lastId = 0;
+  for (let i = 0; i < numEntries; i++) {
+    const v = readVarint(p);
+    entries.push({ tileId: lastId + v, offset: 0, length: 0, runLength: 1 });
+    lastId += v;
+  }
+
+  for (let i = 0; i < numEntries; i++) {
+    entries[i].runLength = readVarint(p);
+  }
+
+  for (let i = 0; i < numEntries; i++) {
+    entries[i].length = readVarint(p);
+  }
+
+  for (let i = 0; i < numEntries; i++) {
+    const v = readVarint(p);
+    if (v === 0 && i > 0) {
+      entries[i].offset = entries[i - 1].offset + entries[i - 1].length;
+    } else {
+      entries[i].offset = v - 1;
+    }
+  }
+
+  return entries;
+}
+
+export const GetPMtilesTile = async (pmtilesFile, z, x, y) => {
+  const tile_id = PMTiles.zxyToTileId(z, x, y);
+  const header = await GetPMtilesHeader(pmtilesFile)
+
+  if (z < header.minZoom || z > header.maxZoom) {
+    return undefined;
+  }
+
+  let rootDirectoryOffset = header.rootDirectoryOffset;
+  let rootDirectoryLength = header.rootDirectoryLength;
+  for (let depth = 0; depth <= 3; depth++) {
+    const RootDirectoryBytes = await ReadBytes(pmtilesFile, rootDirectoryOffset, rootDirectoryLength)
+    const RootDirectoryBytesaDecomp = await GetPMtilesDecompress(header, RootDirectoryBytes)
+    const Directory = deserializeIndex(RootDirectoryBytesaDecomp)
+    const entry = PMTiles.findTile(Directory, tile_id);
+    if (entry) {
+      if (entry.runLength > 0) {
+        const EntryBytesArrayBuff = await ReadBytes(pmtilesFile, header.tileDataOffset + entry.offset, entry.length)
+        const EntryBytes = ArrayBufferToBuffer(EntryBytesArrayBuff)
+        //const EntryDecomp = await GetPMtilesDecompress(header, EntryBytes)
+        const EntryTileType = GetPmtilesTileType(header.tileType)
+        return {data: EntryBytes, header: EntryTileType.header}
+
+      } else {
+        rootDirectoryOffset = header.leafDirectoryOffset + entry.offset;
+        rootDirectoryLength = entry.length;
+      }
+    } else {
+      return undefined;
+    }
+  }
+}
+
+function GetPmtilesTileType(typenum) {
+  let head = {};
+  let tileType
+  switch (typenum) {
+    case 0:
+      tileType = "Unknown"
+      break;
+    case 1:
+      tileType = "pbf"
+      head['Content-Type'] = 'application/x-protobuf';
+      break;
+    case 2:
+      tileType = "png"
+      head['Content-Type'] = 'image/png';
+      break;
+    case 3:
+      tileType = "jpg"
+      head['Content-Type'] = 'image/jpeg';
+      break;
+    case 4:
+      tileType = "webp"
+      head['Content-Type'] = 'image/webp';
+      break;
+    case 5:
+      tileType = "avif"
+      head['Content-Type'] = 'image/avif';
+      break;
+  }
+  return {type: tileType, header: head}
 }

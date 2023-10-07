@@ -1455,6 +1455,7 @@ export const serve_rendered = {
           }
 
           const type = source.type;
+          metadata['extension'] = 'pmtiles';
           Object.assign(source, metadata);
           source.type = type;
           source.tiles = [
@@ -1498,6 +1499,7 @@ export const serve_rendered = {
                   }
   
                   const type = source.type;
+                  info['extension'] = 'mbtiles';
                   Object.assign(source, info);
                   source.type = type;
                   source.tiles = [
