@@ -26,8 +26,14 @@ program
   .description('tileserver-gl startup options')
   .usage('tileserver-gl [mbtiles] [options]')
   .option(
+    '--file <file>',
+    'MBTiles or PMTiles file\n' +
+      '\t                  ignored if the configuration file is also specified',
+  )
+  .option(
     '--mbtiles <file>',
-    'MBTiles file (uses demo configuration);\n' +
+    '(DEPRECIATED) MBTiles file (uses demo configuration);\n' +
+      '\t                  ignored if file is also specified'+
       '\t                  ignored if the configuration file is also specified',
   )
   .option(
@@ -266,35 +272,51 @@ const startWithMBTiles = (mbtilesFile) => {
 
 fs.stat(path.resolve(opts.config), (err, stats) => {
   if (err || !stats.isFile() || stats.size === 0) {
-    let mbtiles = opts.mbtiles;
-    if (!mbtiles) {
+    let inputfile
+    if(opts.file) {
+      inputfile = opts.file;
+    } else if (opts.mbtiles){
+      inputfile = opts.mbtiles;
+    }
+
+    if (!inputfile) {
       // try to find in the cwd
       const files = fs.readdirSync(process.cwd());
       for (const filename of files) {
-        if (filename.endsWith('.mbtiles')) {
-          const mbTilesStats = fs.statSync(filename);
-          if (mbTilesStats.isFile() && mbTilesStats.size > 0) {
-            mbtiles = filename;
+        if (filename.endsWith('.mbtiles') || filename.endsWith('.pmtiles')) {
+          const InputFilesStats = fs.statSync(filename);
+          if (InputFilesStats.isFile() && InputFilesStats.size > 0) {
+            inputfile = filename;
             break;
           }
         }
       }
-      if (mbtiles) {
-        console.log(`No MBTiles specified, using ${mbtiles}`);
-        return startWithPMTiles(mbtiles);
+      if (inputfile) {
+        console.log(`No input file specified, using ${inputfile}`);
+        const extension = inputfile.split('.').pop().toLowerCase();
+        if (extension === 'pmtiles') {
+          return startWithPMTiles(inputfile);
+        } else {
+          return startWithMBTiles(inputfile);
+        }
       } else {
         const url =
           'https://github.com/maptiler/tileserver-gl/releases/download/v1.3.0/zurich_switzerland.mbtiles';
         const filename = 'zurich_switzerland.mbtiles';
         const stream = fs.createWriteStream(filename);
-        console.log(`No MBTiles found`);
+        console.log(`No input file found`);
         console.log(`[DEMO] Downloading sample data (${filename}) from ${url}`);
         stream.on('finish', () => startWithMBTiles(filename));
         return request.get(url).pipe(stream);
       }
     }
-    if (mbtiles) {
-      return startWithPMTiles(mbtiles);
+    if (inputfile) {
+      const extension = inputfile.split('.').pop().toLowerCase();
+      if (extension === 'pmtiles') {
+        return startWithPMTiles(inputfile);
+      } else {
+        return startWithMBTiles(inputfile);
+      }
     }
   } else {
     console.log(`Using specified config file from ${opts.config}`);
