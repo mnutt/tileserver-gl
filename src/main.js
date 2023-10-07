@@ -7,9 +7,8 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import request from 'request';
 import { server } from './server.js';
-import { GetPMtilesInfo } from './utils.js';
-
 import MBTiles from '@mapbox/mbtiles';
+import { GetPMtilesInfo } from './pmtiles_adapter.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -104,7 +103,7 @@ const startWithPMTiles = async (pmtilesFile) => {
   }
 
   const info = await GetPMtilesInfo(pmtilesFile);
-  const metadata = info.metadata
+  const metadata = info.metadata;
 
   console.log(info);
 
@@ -168,7 +167,6 @@ const startWithPMTiles = async (pmtilesFile) => {
   }
 
   return startServer(null, config);
-
 };
 
 const startWithMBTiles = (mbtilesFile) => {
