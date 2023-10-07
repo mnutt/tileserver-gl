@@ -2,6 +2,7 @@
 
 import path from 'path';
 import fs from 'node:fs';
+import * as fflate from 'fflate';
 
 import clone from 'clone';
 import glyphCompose from '@mapbox/glyph-pbf-composite';
@@ -165,6 +166,54 @@ export const getFontsPbf = (
   return Promise.all(queue).then((values) => glyphCompose.combine(values));
 };
 
+function readBytes(fd, sharedBuffer, offset) {
+  return new Promise((resolve, reject) => {
+      fs.read(
+          fd, 
+          sharedBuffer,
+          0,
+          sharedBuffer.length,
+          offset,
+          (err) => {
+              if(err) { return reject(err); }
+              resolve();
+          }
+      );
+  });
+}
+
+const ReadBytes = async (filePath, offset, size) => {
+  const sharedBuffer = Buffer.alloc(size);
+  const stats = fs.statSync(filePath); // file details
+  const fd = fs.openSync(filePath); // file descriptor
+  let bytesRead = 0; // how many bytes were read
+  let end = size; 
+  
+  for(let i = 0; i < size; i++) {
+      let postion = offset + i
+      await readBytes(fd, sharedBuffer, postion);
+      bytesRead = (i + 1) * size;
+      if(bytesRead > stats.size) {
+         // When we reach the end of file, 
+         // we have to calculate how many bytes were actually read
+         end = size - (bytesRead - stats.size);
+      }
+      if(bytesRead === size) {break;}
+  }
+
+  return sharedBuffer;
+}
+
+function BufferToArrayBuffer(buffer) {
+  const arrayBuffer = new ArrayBuffer(buffer.length);
+  const view = new Uint8Array(arrayBuffer);
+  for (let i = 0; i < buffer.length; ++i) {
+    view[i] = buffer[i];
+  }
+  const v = new DataView(arrayBuffer);
+  return arrayBuffer;
+}
+
 const PMTilesLocalSource = class {
   constructor(file) {
     this.file = file;
@@ -178,24 +227,37 @@ const PMTilesLocalSource = class {
   }
 };
 
-function BufferToArrayBuffer(buffer) {
-  const arrayBuffer = new ArrayBuffer(buffer.length);
-  const view = new Uint8Array(arrayBuffer);
-  for (let i = 0; i < buffer.length; ++i) {
-    view[i] = buffer[i];
-  }
-  const v = new DataView(arrayBuffer);
-  return arrayBuffer;
-}
+
+
 
 export const GetPMtilesInfo = async (pmtilesFile) => {
-  var buffer = BufferToArrayBuffer(fs.readFileSync(pmtilesFile));
-  let source = new PMTilesLocalSource(buffer);
-  let pmtiles = new PMTiles.PMTiles(source);
+  var buffer = await ReadBytes(pmtilesFile, 0, 16384)
+  const headerBuf = BufferToArrayBuffer(buffer);
+  //console.log(headerBuf)
+  const header = PMTiles.bytesToHeader(headerBuf, undefined)
+  const compression = header.internalCompression
+  //console.log(header);
 
-  const header = await pmtiles.getHeader();
-  const metadata = await pmtiles.getMetadata();
+  const jsonMetadataOffset = header.jsonMetadataOffset;
+  const jsonMetadataLength = header.jsonMetadataLength;
+  var metadataBytes = await ReadBytes(pmtilesFile, jsonMetadataOffset, jsonMetadataLength)
+  const metadataBuf = BufferToArrayBuffer(metadataBytes);
+
+  //console.log(metadataBytes)
+  var decompressed;
+  if (compression === PMTiles.Compression.None || compression === PMTiles.Compression.Unknown) {
+    decompressed = metadataBuf;
+  } else if (compression === PMTiles.Compression.Gzip) {
+    decompressed = fflate.decompressSync(new Uint8Array(metadataBuf));
+  } else {
+    throw Error("Compression method not supported");
+  }
+  //console.log(metadata)
+  const dec = new TextDecoder("utf-8");
+  var metadata = JSON.parse(dec.decode(decompressed));
+
+
   const bounds = [header.minLat, header.minLon, header.maxLat, header.maxLon]
-  const center = [header.centerLon, header.centerLat, header.centerZoom]
-  return { source: pmtiles, header: header, metadata: metadata, bounds: bounds, center: center };
+  const center = [header.centerLon, header.centerLat, header.centerLat]
+  return { header: header, metadata: metadata, bounds: bounds, center: center };
 }
