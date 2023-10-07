@@ -227,9 +227,6 @@ const PMTilesLocalSource = class {
   }
 };
 
-
-
-
 export const GetPMtilesInfo = async (pmtilesFile) => {
   var buffer = await ReadBytes(pmtilesFile, 0, 16384)
   const headerBuf = BufferToArrayBuffer(buffer);
@@ -256,8 +253,11 @@ export const GetPMtilesInfo = async (pmtilesFile) => {
   const dec = new TextDecoder("utf-8");
   var metadata = JSON.parse(dec.decode(decompressed));
 
-
   const bounds = [header.minLat, header.minLon, header.maxLat, header.maxLon]
   const center = [header.centerLon, header.centerLat, header.centerLat]
-  return { header: header, metadata: metadata, bounds: bounds, center: center };
+  metadata['bounds'] = header.bounds;
+  metadata['center'] = header.center;
+  metadata['minzoom'] = header.minZoom;
+  metadata['maxzoom'] = header.maxZoom;
+  return { header: header, metadata: metadata };
 }

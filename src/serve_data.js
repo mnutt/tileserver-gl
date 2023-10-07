@@ -157,8 +157,6 @@ export const serve_data = {
 
       tileJSON['name'] = id;
       tileJSON['format'] = 'pbf';
-      tileJSON['bounds'] = info.bounds;
-      tileJSON['center'] = info.center;
       Object.assign(tileJSON, metadata);
 
       tileJSON['tilejson'] = '2.0.0';

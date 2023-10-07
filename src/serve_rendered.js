@@ -6,8 +6,8 @@ import path from 'path';
 import url from 'url';
 import util from 'util';
 import zlib from 'zlib';
-import sharp from 'sharp'; // sharp has to be required before node-canvas. see https://github.com/lovell/sharp/issues/371
 import { createCanvas, Image } from 'canvas';
+import sharp from 'sharp'; // sharp has to be required before node-canvas. see https://github.com/lovell/sharp/issues/371
 import clone from 'clone';
 import Color from 'color';
 import express from 'express';
@@ -18,7 +18,7 @@ import MBTiles from '@mapbox/mbtiles';
 import polyline from '@mapbox/polyline';
 import proj4 from 'proj4';
 import request from 'request';
-import { getFontsPbf, getTileUrls, fixTileJSONCenter } from './utils.js';
+import { getFontsPbf, getTileUrls, fixTileJSONCenter, GetPMtilesInfo } from './utils.js';
 
 const FLOAT_PATTERN = '[+-]?(?:\\d+|\\d+.?\\d+)';
 const PATH_PATTERN =
@@ -1205,7 +1205,7 @@ export const serve_rendered = {
 
     return Promise.all([fontListingPromise]).then(() => app);
   },
-  add: (options, repo, params, id, publicUrl, dataResolver) => {
+  add: async (options, repo, params, id, publicUrl, dataResolver) => {
     const map = {
       renderers: [],
       renderers_static: [],
@@ -1438,58 +1438,96 @@ export const serve_rendered = {
           }
         }
 
-        queue.push(
-          new Promise((resolve, reject) => {
-            mbtilesFile = path.resolve(options.paths.mbtiles, mbtilesFile);
-            const mbtilesFileStats = fs.statSync(mbtilesFile);
-            if (!mbtilesFileStats.isFile() || mbtilesFileStats.size === 0) {
-              throw Error(`Not valid MBTiles file: ${mbtilesFile}`);
+        const mbtilesFileStats = fs.statSync(mbtilesFile);
+        if (!mbtilesFileStats.isFile() || mbtilesFileStats.size === 0) {
+          throw Error(`Not valid MBTiles file: ${mbtilesFile}`);
+        }
+        const extension = mbtilesFile.split('.').pop().toLowerCase();
+        if (extension === 'pmtiles') {
+          const info = await GetPMtilesInfo(mbtilesFile);
+          const metadata = info.metadata;
+
+          if (!repoobj.dataProjWGStoInternalWGS && metadata.proj4) {
+            // how to do this for multiple sources with different proj4 defs?
+            const to3857 = proj4('EPSG:3857');
+            const toDataProj = proj4(metadata.proj4);
+            repoobj.dataProjWGStoInternalWGS = (xy) => to3857.inverse(toDataProj.forward(xy));
+          }
+
+          const type = source.type;
+          Object.assign(source, metadata);
+          source.type = type;
+          source.tiles = [
+            // meta url which will be detected when requested
+            `mbtiles://${name}/{z}/{x}/{y}.${metadata.format || 'pbf'}`,
+          ];
+          delete source.scheme;
+          console.log(source);
+
+          if (!attributionOverride &&
+            source.attribution &&
+            source.attribution.length > 0) {
+            if (!tileJSON.attribution.includes(source.attribution)) {
+              if (tileJSON.attribution.length > 0) {
+                tileJSON.attribution += ' | ';
+              }
+              tileJSON.attribution += source.attribution;
             }
-            map.sources[name] = new MBTiles(mbtilesFile + '?mode=ro', (err) => {
-              map.sources[name].getInfo((err, info) => {
-                if (err) {
-                  console.error(err);
-                  return;
-                }
-
-                if (!repoobj.dataProjWGStoInternalWGS && info.proj4) {
-                  // how to do this for multiple sources with different proj4 defs?
-                  const to3857 = proj4('EPSG:3857');
-                  const toDataProj = proj4(info.proj4);
-                  repoobj.dataProjWGStoInternalWGS = (xy) =>
-                    to3857.inverse(toDataProj.forward(xy));
-                }
-
-                const type = source.type;
-                Object.assign(source, info);
-                source.type = type;
-                source.tiles = [
-                  // meta url which will be detected when requested
-                  `mbtiles://${name}/{z}/{x}/{y}.${info.format || 'pbf'}`,
-                ];
-                delete source.scheme;
-
-                if (options.dataDecoratorFunc) {
-                  source = options.dataDecoratorFunc(name, 'tilejson', source);
-                }
-
-                if (
-                  !attributionOverride &&
-                  source.attribution &&
-                  source.attribution.length > 0
-                ) {
-                  if (!tileJSON.attribution.includes(source.attribution)) {
-                    if (tileJSON.attribution.length > 0) {
-                      tileJSON.attribution += ' | ';
-                    }
-                    tileJSON.attribution += source.attribution;
+          }
+        } else {
+          queue.push(
+            new Promise((resolve, reject) => {
+              mbtilesFile = path.resolve(options.paths.mbtiles, mbtilesFile);
+              const mbtilesFileStats = fs.statSync(mbtilesFile);
+              if (!mbtilesFileStats.isFile() || mbtilesFileStats.size === 0) {
+                throw Error(`Not valid MBTiles file: ${mbtilesFile}`);
+              }
+              map.sources[name] = new MBTiles(mbtilesFile + '?mode=ro', (err) => {
+                map.sources[name].getInfo((err, info) => {
+                  if (err) {
+                    console.error(err);
+                    return;
                   }
-                }
-                resolve();
+  
+                  if (!repoobj.dataProjWGStoInternalWGS && info.proj4) {
+                    // how to do this for multiple sources with different proj4 defs?
+                    const to3857 = proj4('EPSG:3857');
+                    const toDataProj = proj4(info.proj4);
+                    repoobj.dataProjWGStoInternalWGS = (xy) =>
+                      to3857.inverse(toDataProj.forward(xy));
+                  }
+  
+                  const type = source.type;
+                  Object.assign(source, info);
+                  source.type = type;
+                  source.tiles = [
+                    // meta url which will be detected when requested
+                    `mbtiles://${name}/{z}/{x}/{y}.${info.format || 'pbf'}`,
+                  ];
+                  delete source.scheme;
+  
+                  if (options.dataDecoratorFunc) {
+                    source = options.dataDecoratorFunc(name, 'tilejson', source);
+                  }
+  
+                  if (
+                    !attributionOverride &&
+                    source.attribution &&
+                    source.attribution.length > 0
+                  ) {
+                    if (!tileJSON.attribution.includes(source.attribution)) {
+                      if (tileJSON.attribution.length > 0) {
+                        tileJSON.attribution += ' | ';
+                      }
+                      tileJSON.attribution += source.attribution;
+                    }
+                  }
+                  resolve();
+                });
               });
-            });
-          }),
-        );
+            }),
+          )
+        }
       }
     }
 
