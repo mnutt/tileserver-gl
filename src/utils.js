@@ -178,14 +178,19 @@ const PMTilesLocalSource = class {
   }
 };
 
-export const GetPMtilesInfo = async (pmtilesFile) => {
-  const buffer = fs.readFileSync(pmtilesFile)
+function BufferToArrayBuffer(buffer) {
   const arrayBuffer = new ArrayBuffer(buffer.length);
   const view = new Uint8Array(arrayBuffer);
   for (let i = 0; i < buffer.length; ++i) {
     view[i] = buffer[i];
   }
-  let source = new PMTilesLocalSource(arrayBuffer);
+  const v = new DataView(arrayBuffer);
+  return arrayBuffer;
+}
+
+export const GetPMtilesInfo = async (pmtilesFile) => {
+  var buffer = BufferToArrayBuffer(fs.readFileSync(pmtilesFile));
+  let source = new PMTilesLocalSource(buffer);
   let pmtiles = new PMTiles.PMTiles(source);
 
   const header = await pmtiles.getHeader();
