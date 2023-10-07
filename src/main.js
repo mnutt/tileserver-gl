@@ -33,7 +33,7 @@ program
   .option(
     '--mbtiles <file>',
     '(DEPRECIATED) MBTiles file (uses demo configuration);\n' +
-      '\t                  ignored if file is also specified'+
+      '\t                  ignored if file is also specified' +
       '\t                  ignored if the configuration file is also specified',
   )
   .option(
@@ -272,10 +272,10 @@ const startWithMBTiles = (mbtilesFile) => {
 
 fs.stat(path.resolve(opts.config), (err, stats) => {
   if (err || !stats.isFile() || stats.size === 0) {
-    let inputfile
-    if(opts.file) {
+    let inputfile;
+    if (opts.file) {
       inputfile = opts.file;
-    } else if (opts.mbtiles){
+    } else if (opts.mbtiles) {
       inputfile = opts.mbtiles;
     }
 
