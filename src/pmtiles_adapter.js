@@ -29,11 +29,11 @@ export const GetPMtilesInfo = async (pmtilesFile) => {
     header.maxLat != 0 &&
     header.maxLon != 0
   ) {
-    const bounds = [header.minLat, header.minLon, header.maxLat, header.maxLon];
+    const bounds = [header.minLon, header.minLat, header.maxLon, header.maxLat];
     metadata['bounds'] = bounds;
   }
   if (header.centerLon != 0 && header.centerLat != 0) {
-    const center = [header.centerLon, header.centerLat, header.centerLat];
+    const center = [header.centerLon, header.centerLat, header.centerZoom];
     metadata['center'] = center;
   }
   metadata['minzoom'] = header.minZoom;
