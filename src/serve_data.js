@@ -21,7 +21,6 @@ export const serve_data = {
       '/:id/:z(\\d+)/:x(\\d+)/:y(\\d+).:format([\\w.]+)',
       async (req, res, next) => {
         const item = repo[req.params.id];
-        console.log(item);
         if (!item) {
           return res.sendStatus(404);
         }
@@ -56,8 +55,6 @@ export const serve_data = {
           let tileinfo = await GetPMtilesTile(item.source, z, x, y);
           let data = tileinfo.data;
           let headers = tileinfo.header;
-          console.log(data);
-          console.log(headers);
           if (data == undefined) {
             return res.status(404).send('Not found');
           } else {
@@ -270,8 +267,6 @@ export const serve_data = {
 
       await sourceInfoPromise;
     }
-
-    console.log(tileJSON);
 
     repo[id] = {
       tileJSON,
