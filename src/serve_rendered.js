@@ -6,8 +6,8 @@ import path from 'path';
 import url from 'url';
 import util from 'util';
 import zlib from 'zlib';
-import sharp from 'sharp'; // sharp has to be required before node-canvas. see https://github.com/lovell/sharp/issues/371
 import { createCanvas, Image } from 'canvas';
+import sharp from 'sharp'; // sharp has to be required before node-canvas. see https://github.com/lovell/sharp/issues/371
 import clone from 'clone';
 import Color from 'color';
 import express from 'express';
@@ -19,7 +19,7 @@ import polyline from '@mapbox/polyline';
 import proj4 from 'proj4';
 import request from 'request';
 import { getFontsPbf, getTileUrls, fixTileJSONCenter } from './utils.js';
-import { GetPMtilesInfo } from './pmtiles_adapter.js';
+import { GetPMtilesInfo, GetPMtilesTile } from './pmtiles_adapter.js';
 
 const FLOAT_PATTERN = '[+-]?(?:\\d+|\\d+.?\\d+)';
 const PATH_PATTERN =
@@ -1219,9 +1219,9 @@ export const serve_rendered = {
         const renderer = new mlgl.Map({
           mode: mode,
           ratio: ratio,
-          request: (req, callback) => {
+          request: async (req, callback) => {
             const protocol = req.url.split(':')[0];
-            // console.log('Handling request:', req);
+             console.log('Handling request:', req);
             if (protocol === 'sprites') {
               const dir = options.paths[protocol];
               const file = unescape(req.url).substring(protocol.length + 3);
@@ -1251,55 +1251,107 @@ export const serve_rendered = {
               const sourceId = parts[2];
               const source = map.sources[sourceId];
               const sourceInfo = styleJSON.sources[sourceId];
+              var typeofv = typeof map.sources[sourceId]
+
               const z = parts[3] | 0;
               const x = parts[4] | 0;
               const y = parts[5].split('.')[0] | 0;
               const format = parts[5].split('.')[1];
-              source.getTile(z, x, y, (err, data, headers) => {
-                if (err) {
+
+              if (typeof map.sources[sourceId] === 'string' && map.sources[sourceId].split('.').pop().toLowerCase() === 'pmtiles') {
+                let tileinfo = await GetPMtilesTile(map.sources[sourceId], z, x, y);
+                let data = tileinfo.data;
+                let headers = tileinfo.header;
+                if (data == undefined) {
                   if (options.verbose)
-                    console.log('MBTiles error, serving empty', err);
+                  console.log('MBTiles error, serving empty', err);
                   createEmptyResponse(
                     sourceInfo.format,
                     sourceInfo.color,
                     callback,
                   );
                   return;
-                }
-
-                const response = {};
-                if (headers['Last-Modified']) {
-                  response.modified = new Date(headers['Last-Modified']);
-                }
-
-                if (format === 'pbf') {
-                  try {
-                    response.data = zlib.unzipSync(data);
-                  } catch (err) {
-                    console.log(
-                      'Skipping incorrect header for tile mbtiles://%s/%s/%s/%s.pbf',
-                      id,
-                      z,
-                      x,
-                      y,
-                    );
-                  }
-                  if (options.dataDecoratorFunc) {
-                    response.data = options.dataDecoratorFunc(
-                      sourceId,
-                      'data',
-                      response.data,
-                      z,
-                      x,
-                      y,
-                    );
-                  }
                 } else {
-                  response.data = data;
-                }
+                  const response = {};
+                  if (headers['Last-Modified']) {
+                    response.modified = new Date(headers['Last-Modified']);
+                  }
 
-                callback(null, response);
-              });
+                  if (format === 'pbf') {
+                    try {
+                      response.data = zlib.unzipSync(data);
+                    } catch (err) {
+                      console.log(
+                        'Skipping incorrect header for tile mbtiles://%s/%s/%s/%s.pbf',
+                        id,
+                        z,
+                        x,
+                        y,
+                      );
+                    }
+                    if (options.dataDecoratorFunc) {
+                      response.data = options.dataDecoratorFunc(
+                        sourceId,
+                        'data',
+                        response.data,
+                        z,
+                        x,
+                        y,
+                      );
+                    }
+                  } else {
+                    response.data = data;
+                  }
+
+                  callback(null, response);
+                }
+              } else {
+                source.getTile(z, x, y, (err, data, headers) => {
+                  if (err) {
+                    if (options.verbose)
+                      console.log('MBTiles error, serving empty', err);
+                    createEmptyResponse(
+                      sourceInfo.format,
+                      sourceInfo.color,
+                      callback,
+                    );
+                    return;
+                  }
+
+                  const response = {};
+                  if (headers['Last-Modified']) {
+                    response.modified = new Date(headers['Last-Modified']);
+                  }
+
+                  if (format === 'pbf') {
+                    try {
+                      response.data = zlib.unzipSync(data);
+                    } catch (err) {
+                      console.log(
+                        'Skipping incorrect header for tile mbtiles://%s/%s/%s/%s.pbf',
+                        id,
+                        z,
+                        x,
+                        y,
+                      );
+                    }
+                    if (options.dataDecoratorFunc) {
+                      response.data = options.dataDecoratorFunc(
+                        sourceId,
+                        'data',
+                        response.data,
+                        z,
+                        x,
+                        y,
+                      );
+                    }
+                  } else {
+                    response.data = data;
+                  }
+
+                  callback(null, response);
+                });
+              }
             } else if (protocol === 'http' || protocol === 'https') {
               request(
                 {
@@ -1447,6 +1499,7 @@ export const serve_rendered = {
         if (extension === 'pmtiles') {
           const info = await GetPMtilesInfo(mbtilesFile);
           const metadata = info.metadata;
+          map.sources[metadata.name.toLowerCase()] = mbtilesFile
 
           if (!repoobj.dataProjWGStoInternalWGS && metadata.proj4) {
             // how to do this for multiple sources with different proj4 defs?
@@ -1465,7 +1518,7 @@ export const serve_rendered = {
             `mbtiles://${name}/{z}/{x}/{y}.${metadata.format || 'pbf'}`,
           ];
           delete source.scheme;
-          console.log(source);
+          //console.log(source);
 
           if (
             !attributionOverride &&
