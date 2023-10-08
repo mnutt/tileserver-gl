@@ -89,9 +89,9 @@ const startWithInputFile = async (inputfile) => {
 
   inputfile = path.resolve(process.cwd(), inputfile);
 
-  const tilesStats = fs.statSync(inputfile);
-  if (!tilesStats.isFile() || tilesStats.size === 0) {
-    console.log(`ERROR: Not valid MBTiles or PMTiles file: ${inputfile}`);
+  const inputfileStats = fs.statSync(inputfile);
+  if (!inputfileStats.isFile() || inputfileStats.size === 0) {
+    console.log(`ERROR: Not a valid input file: ${inputfile}`);
     process.exit(1);
   }
 
