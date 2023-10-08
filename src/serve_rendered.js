@@ -1498,7 +1498,7 @@ export const serve_rendered = {
         if (extension === 'pmtiles') {
           const info = await GetPMtilesInfo(mbtilesFile);
           const metadata = info.metadata;
-          map.sources[metadata.name.toLowerCase()] = mbtilesFile
+          map.sources[metadata.name.toLowerCase()] = mbtilesFile;
 
           if (!repoobj.dataProjWGStoInternalWGS && metadata.proj4) {
             // how to do this for multiple sources with different proj4 defs?
