@@ -1221,7 +1221,7 @@ export const serve_rendered = {
           ratio: ratio,
           request: async (req, callback) => {
             const protocol = req.url.split(':')[0];
-             console.log('Handling request:', req);
+            console.log('Handling request:', req);
             if (protocol === 'sprites') {
               const dir = options.paths[protocol];
               const file = unescape(req.url).substring(protocol.length + 3);
@@ -1257,13 +1257,22 @@ export const serve_rendered = {
               const y = parts[5].split('.')[0] | 0;
               const format = parts[5].split('.')[1];
 
-              if (typeof map.sources[sourceId] === 'string' && map.sources[sourceId].split('.').pop().toLowerCase() === 'pmtiles') {
-                let tileinfo = await GetPMtilesTile(map.sources[sourceId], z, x, y);
+              if (
+                typeof map.sources[sourceId] === 'string' &&
+                map.sources[sourceId].split('.').pop().toLowerCase() ===
+                  'pmtiles'
+              ) {
+                let tileinfo = await GetPMtilesTile(
+                  map.sources[sourceId],
+                  z,
+                  x,
+                  y,
+                );
                 let data = tileinfo.data;
                 let headers = tileinfo.header;
                 if (data == undefined) {
                   if (options.verbose)
-                  console.log('MBTiles error, serving empty', err);
+                    console.log('MBTiles error, serving empty', err);
                   createEmptyResponse(
                     sourceInfo.format,
                     sourceInfo.color,

@@ -117,7 +117,7 @@ const startWithInputFile = async (inputfile) => {
   if (extension === 'pmtiles') {
     const info = await GetPMtilesInfo(inputfile);
     const metadata = info.metadata;
-  
+
     if (
       metadata.format === 'pbf' &&
       metadata.name.toLowerCase().indexOf('openmaptiles') > -1
@@ -125,7 +125,7 @@ const startWithInputFile = async (inputfile) => {
       config['data'][`v3`] = {
         mbtiles: path.basename(inputfile),
       };
-  
+
       const styles = fs.readdirSync(path.resolve(styleDir, 'styles'));
       for (const styleName of styles) {
         const styleFileRel = styleName + '/style.json';
@@ -143,20 +143,17 @@ const startWithInputFile = async (inputfile) => {
       console.log(
         `WARN: PMTiles not in "openmaptiles" format. Serving raw data only...`,
       );
-      config['data'][
-        (metadata.id || 'mbtiles')
-          .replace(/[?/:]/g, '_')
-      ] = {
+      config['data'][(metadata.id || 'mbtiles').replace(/[?/:]/g, '_')] = {
         mbtiles: path.basename(inputfile),
       };
     }
-  
+
     if (opts.verbose) {
       console.log(JSON.stringify(config, undefined, 2));
     } else {
       console.log('Run with --verbose to see the config file here.');
     }
-  
+
     return startServer(null, config);
   } else {
     const instance = new MBTiles(inputfile + '?mode=ro', (err) => {
@@ -165,7 +162,7 @@ const startWithInputFile = async (inputfile) => {
         console.log(`Make sure ${path.basename(inputfile)} is valid MBTiles.`);
         process.exit(1);
       }
-  
+
       instance.getInfo((err, info) => {
         if (err || !info) {
           console.log('ERROR: Metadata missing in the MBTiles.');
@@ -175,7 +172,7 @@ const startWithInputFile = async (inputfile) => {
           process.exit(1);
         }
         const bounds = info.bounds;
-  
+
         if (
           info.format === 'pbf' &&
           info.name.toLowerCase().indexOf('openmaptiles') > -1
@@ -183,7 +180,7 @@ const startWithInputFile = async (inputfile) => {
           config['data'][`v3`] = {
             mbtiles: path.basename(inputfile),
           };
-  
+
           const styles = fs.readdirSync(path.resolve(styleDir, 'styles'));
           for (const styleName of styles) {
             const styleFileRel = styleName + '/style.json';
@@ -201,20 +198,17 @@ const startWithInputFile = async (inputfile) => {
           console.log(
             `WARN: MBTiles not in "openmaptiles" format. Serving raw data only...`,
           );
-          config['data'][
-            (info.id || 'mbtiles')
-            .replace(/[?/:]/g, '_')
-          ] = {
+          config['data'][(info.id || 'mbtiles').replace(/[?/:]/g, '_')] = {
             mbtiles: path.basename(inputfile),
           };
         }
-  
+
         if (opts.verbose) {
           console.log(JSON.stringify(config, undefined, 2));
         } else {
           console.log('Run with --verbose to see the config file here.');
         }
-  
+
         return startServer(null, config);
       });
     });
