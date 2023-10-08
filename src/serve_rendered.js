@@ -1251,7 +1251,6 @@ export const serve_rendered = {
               const sourceId = parts[2];
               const source = map.sources[sourceId];
               const sourceInfo = styleJSON.sources[sourceId];
-              var typeofv = typeof map.sources[sourceId]
 
               const z = parts[3] | 0;
               const x = parts[4] | 0;

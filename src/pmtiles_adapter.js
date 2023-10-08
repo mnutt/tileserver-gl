@@ -140,7 +140,6 @@ const ReadBytes = async (filePath, offset, size) => {
   const stats = fs.statSync(filePath); // file details
   const fd = fs.openSync(filePath); // file descriptor
   let bytesRead = 0; // how many bytes were read
-  let end = size;
 
   for (let i = 0; i < size; i++) {
     let postion = offset + i;
