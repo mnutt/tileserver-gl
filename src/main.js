@@ -145,9 +145,7 @@ const startWithInputFile = async (inputfile) => {
       );
       config['data'][
         (metadata.id || 'mbtiles')
-          .replace(/\//g, '_')
-          .replace(/:/g, '_')
-          .replace(/\?/g, '_')
+          .replace(/[?/:]/g, '_')
       ] = {
         mbtiles: path.basename(inputfile),
       };
