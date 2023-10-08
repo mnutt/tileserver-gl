@@ -101,7 +101,6 @@ export const serve_data = {
 
             if (!isGzipped) {
               data = zlib.gzipSync(data);
-              isGzipped = true;
             }
 
             return res.status(200).send(data);
@@ -165,7 +164,6 @@ export const serve_data = {
 
                 if (!isGzipped) {
                   data = zlib.gzipSync(data);
-                  isGzipped = true;
                 }
 
                 return res.status(200).send(data);
