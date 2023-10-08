@@ -80,19 +80,6 @@ const startServer = (configPath, config) => {
   });
 };
 
-var PMTilesLocalSource = class {
-  constructor(file) {
-    this.file = file;
-  }
-  getKey() {
-    return this.file.name;
-  }
-  async getBytes(offset, length) {
-    const blob = this.file.slice(offset, offset + length);
-    return { data: blob };
-  }
-};
-
 const startWithPMTiles = async (pmtilesFile) => {
   console.log(`[INFO] Automatically creating config file for ${pmtilesFile}`);
   console.log(`[INFO] Only a basic preview style will be used.`);
