@@ -53,11 +53,11 @@ export const serve_data = {
         if (tileJSONExtension === 'pmtiles') {
           let isGzipped;
           let tileinfo = await GetPMtilesTile(item.source, z, x, y);
-          let data = tileinfo.data;
-          let headers = tileinfo.header;
-          if (data == undefined) {
+          if (tileinfo == undefined || tileinfo.data == undefined) {
             return res.status(404).send('Not found');
           } else {
+            let data = tileinfo.data;
+            let headers = tileinfo.header;
             if (tileJSONFormat === 'pbf') {
               isGzipped =
                 data.slice(0, 2).indexOf(Buffer.from([0x1f, 0x8b])) === 0;
