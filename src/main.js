@@ -134,7 +134,7 @@ const startWithPMTiles = async (pmtilesFile) => {
         config['styles'][styleName] = {
           style: styleFileRel,
           tilejson: {
-            bounds: info.bounds,
+            bounds: metadata.bounds,
           },
         };
       }

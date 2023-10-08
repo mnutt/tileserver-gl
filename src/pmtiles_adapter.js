@@ -21,23 +21,14 @@ export const GetPMtilesInfo = async (pmtilesFile) => {
   const metadata = JSON.parse(dec.decode(metadataDecomp));
 
   //Add missing metadata from header
-  metadata['format'] = GetPmtilesTileType(header.tileType).type;
+  const bounds = [header.minLon, header.minLat, header.maxLon, header.maxLat];
+  const center = [header.centerLon, header.centerLat, header.centerZoom];
 
-  if (
-    header.minLat != 0 &&
-    header.minLon != 0 &&
-    header.maxLat != 0 &&
-    header.maxLon != 0
-  ) {
-    const bounds = [header.minLon, header.minLat, header.maxLon, header.maxLat];
-    metadata['bounds'] = bounds;
-  }
-  if (header.centerLon != 0 && header.centerLat != 0) {
-    const center = [header.centerLon, header.centerLat, header.centerZoom];
-    metadata['center'] = center;
-  }
+  metadata['bounds'] = bounds;
+  metadata['center'] = center;
   metadata['minzoom'] = header.minZoom;
   metadata['maxzoom'] = header.maxZoom;
+  metadata['format'] = GetPmtilesTileType(header.tileType).type;
 
   return { header: header, metadata: metadata };
 };
