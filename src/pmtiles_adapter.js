@@ -137,8 +137,8 @@ function ArrayBufferToBuffer(ab) {
 
 const ReadBytes = async (filePath, offset, size) => {
   const sharedBuffer = Buffer.alloc(size);
-  const stats = fs.statSync(filePath); // file details
   const fd = fs.openSync(filePath); // file descriptor
+  const stats = fs.fstatSync(fd); // file details
   let bytesRead = 0; // how many bytes were read
 
   for (let i = 0; i < size; i++) {
