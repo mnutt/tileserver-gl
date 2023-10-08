@@ -154,6 +154,7 @@ const ReadBytes = async (filePath, offset, size) => {
       break;
     }
   }
+  fs.closeSync(fd); //close file when finished
 
   return BufferToArrayBuffer(sharedBuffer);
 };
