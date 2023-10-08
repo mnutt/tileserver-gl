@@ -1,5 +1,5 @@
 import fs from 'node:fs';
-import * as fflate from 'fflate';
+import zlib from 'zlib';
 import PMTiles from 'pmtiles';
 
 export const GetPMtilesHeader = async (pmtilesFile) => {
@@ -185,7 +185,7 @@ export const GetPMtilesDecompress = async (header, buffer) => {
   ) {
     decompressed = buffer;
   } else if (compression === PMTiles.Compression.Gzip) {
-    decompressed = fflate.decompressSync(new Uint8Array(buffer));
+    decompressed = zlib.unzipSync(buffer);
   } else {
     throw Error('Compression method not supported');
   }
