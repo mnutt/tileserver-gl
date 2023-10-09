@@ -106,18 +106,12 @@ function ArrayBufferToBuffer(array_buffer) {
 const ReadFileBytes = async (filePath, offset, size) => {
   const sharedBuffer = Buffer.alloc(size);
   const fd = fs.openSync(filePath); // file descriptor
-  const stats = fs.fstatSync(fd); // file details
   let bytesRead = 0; // how many bytes were read
 
   for (let i = 0; i < size; i++) {
     let postion = offset + i;
     await ReadBytes(fd, sharedBuffer, postion);
     bytesRead = (i + 1) * size;
-    if (bytesRead > stats.size) {
-      // When we reach the end of file,
-      // we have to calculate how many bytes were actually read
-      end = size - (bytesRead - stats.size);
-    }
     if (bytesRead === size) {
       break;
     }
