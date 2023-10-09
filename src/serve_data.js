@@ -51,7 +51,6 @@ export const serve_data = {
           return res.status(404).send('Out of bounds');
         }
         if (tileJSONExtension === 'pmtiles') {
-          let isGzipped;
           let tileinfo = await GetPMtilesTile(item.source, z, x, y);
           if (tileinfo == undefined || tileinfo.data == undefined) {
             return res.status(404).send('Not found');
@@ -59,13 +58,7 @@ export const serve_data = {
             let data = tileinfo.data;
             let headers = tileinfo.header;
             if (tileJSONFormat === 'pbf') {
-              isGzipped =
-                data.slice(0, 2).indexOf(Buffer.from([0x1f, 0x8b])) === 0;
               if (options.dataDecoratorFunc) {
-                if (isGzipped) {
-                  data = zlib.unzipSync(data);
-                  isGzipped = false;
-                }
                 data = options.dataDecoratorFunc(id, 'data', data, z, x, y);
               }
             }
@@ -99,9 +92,7 @@ export const serve_data = {
             headers['Content-Encoding'] = 'gzip';
             res.set(headers);
 
-            if (!isGzipped) {
-              data = zlib.gzipSync(data);
-            }
+            data = zlib.gzipSync(data);
 
             return res.status(200).send(data);
           }

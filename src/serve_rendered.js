@@ -1281,22 +1281,12 @@ export const serve_rendered = {
                   return;
                 } else {
                   const response = {};
+                  response.data = data;
                   if (headers['Last-Modified']) {
                     response.modified = new Date(headers['Last-Modified']);
                   }
 
                   if (format === 'pbf') {
-                    try {
-                      response.data = zlib.unzipSync(data);
-                    } catch (err) {
-                      console.log(
-                        'Skipping incorrect header for tile mbtiles://%s/%s/%s/%s.pbf',
-                        id,
-                        z,
-                        x,
-                        y,
-                      );
-                    }
                     if (options.dataDecoratorFunc) {
                       response.data = options.dataDecoratorFunc(
                         sourceId,
@@ -1307,8 +1297,6 @@ export const serve_rendered = {
                         y,
                       );
                     }
-                  } else {
-                    response.data = data;
                   }
 
                   callback(null, response);
