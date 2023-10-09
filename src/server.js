@@ -494,7 +494,9 @@ function start(opts) {
           size /= 1024;
         }
         data_.formatted_filesize = `${size.toFixed(2)} ${suffix}`;
+        data_.extension = tilejson.extension;
       }
+      if (tilejson.extension) {data_.extension = tilejson.extension;}
     }
     return {
       styles: Object.keys(styles).length ? styles : null,
