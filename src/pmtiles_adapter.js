@@ -9,9 +9,32 @@ const PMTilesLocalSource = class {
     return this.file.name;
   }
   async getBytes(offset, length) {
-    const blob = await ReadFileBytes(this.file, offset, length);
-    return { data: blob };
+    const sharedBuffer = Buffer.alloc(length);
+    const fd = fs.openSync(this.file); // file descriptor
+    let bytesRead = 0; // how many bytes were read
+  
+    for (let i = 0; i < length; i++) {
+      let postion = offset + i;
+      await ReadBytes(fd, sharedBuffer, postion);
+      bytesRead = (i + 1) * length;
+      if (bytesRead === length) {
+        break;
+      }
+    }
+    fs.closeSync(fd); //close file when finished
+    return { data: BufferToArrayBuffer(sharedBuffer) };
   }
+};
+
+const ReadBytes = async (fd, sharedBuffer, offset) => {
+  return new Promise((resolve, reject) => {
+    fs.read(fd, sharedBuffer, 0, sharedBuffer.length, offset, (err) => {
+      if (err) {
+        return reject(err);
+      }
+      resolve();
+    });
+  });
 };
 
 export const GetPMtilesInfo = async (pmtilesFile) => {
@@ -76,35 +99,6 @@ const GetPmtilesTileType = (typenum) => {
       break;
   }
   return { type: tileType, header: head };
-};
-
-const ReadFileBytes = async (filePath, offset, size) => {
-  const sharedBuffer = Buffer.alloc(size);
-  const fd = fs.openSync(filePath); // file descriptor
-  let bytesRead = 0; // how many bytes were read
-
-  for (let i = 0; i < size; i++) {
-    let postion = offset + i;
-    await ReadBytes(fd, sharedBuffer, postion);
-    bytesRead = (i + 1) * size;
-    if (bytesRead === size) {
-      break;
-    }
-  }
-  fs.closeSync(fd); //close file when finished
-
-  return BufferToArrayBuffer(sharedBuffer);
-};
-
-const ReadBytes = async (fd, sharedBuffer, offset) => {
-  return new Promise((resolve, reject) => {
-    fs.read(fd, sharedBuffer, 0, sharedBuffer.length, offset, (err) => {
-      if (err) {
-        return reject(err);
-      }
-      resolve();
-    });
-  });
 };
 
 const BufferToArrayBuffer = (buffer) => {
