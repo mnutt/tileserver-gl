@@ -10,18 +10,9 @@ const PMTilesLocalSource = class {
   }
   async getBytes(offset, length) {
     const sharedBuffer = Buffer.alloc(length);
-    const fd = fs.openSync(this.file); // file descriptor
-    let bytesRead = 0; // how many bytes were read
-  
-    for (let i = 0; i < length; i++) {
-      let postion = offset + i;
-      await ReadBytes(fd, sharedBuffer, postion);
-      bytesRead = (i + 1) * length;
-      if (bytesRead === length) {
-        break;
-      }
-    }
-    fs.closeSync(fd); //close file when finished
+    const fd = fs.openSync(this.file, 'r'); // file descriptor
+    await ReadBytes(fd, sharedBuffer, offset);
+    fs.closeSync(fd); //close file descriptor when finished
     return { data: BufferToArrayBuffer(sharedBuffer) };
   }
 };
