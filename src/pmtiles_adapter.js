@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import PMTiles from 'pmtiles';
 
-var PMTilesLocalSource = class {
+const PMTilesLocalSource = class {
   constructor(file) {
     this.file = file;
   }
@@ -18,7 +18,7 @@ export const GetPMtilesInfo = async (pmtilesFile) => {
   const source = new PMTilesLocalSource(pmtilesFile);
   const pmtiles = new PMTiles.PMTiles(source);
   const header = await pmtiles.getHeader();
-  const metadata = await pmtiles.getMetadata()
+  const metadata = await pmtiles.getMetadata();
 
   //Add missing metadata from header
   const bounds = [header.minLon, header.minLat, header.maxLon, header.maxLat];
@@ -39,15 +39,15 @@ export const GetPMtilesTile = async (pmtilesFile, z, x, y) => {
   const header = await pmtiles.getHeader();
   const TileType = GetPmtilesTileType(header.tileType);
   let zxyTile = await pmtiles.getZxy(z, x, y);
-  if(zxyTile.data !== undefined){zxyTile = ArrayBufferToBuffer(zxyTile.data);} else {zxyTile = undefined}
+  if (zxyTile.data !== undefined) {
+    zxyTile = ArrayBufferToBuffer(zxyTile.data);
+  } else {
+    zxyTile = undefined;
+  }
   return { data: zxyTile, header: TileType.header };
 };
 
-/**
- *
- * @param typenum
- */
-function GetPmtilesTileType(typenum) {
+const GetPmtilesTileType = (typenum) => {
   let head = {};
   let tileType;
   switch (typenum) {
@@ -76,32 +76,7 @@ function GetPmtilesTileType(typenum) {
       break;
   }
   return { type: tileType, header: head };
-}
-/**
- *
- * @param buffer
- */
-function BufferToArrayBuffer(buffer) {
-  const arrayBuffer = new ArrayBuffer(buffer.length);
-  const view = new Uint8Array(arrayBuffer);
-  for (let i = 0; i < buffer.length; ++i) {
-    view[i] = buffer[i];
-  }
-  return arrayBuffer;
-}
-
-/**
- *
- * @param ab
- */
-function ArrayBufferToBuffer(array_buffer) {
-  var buffer = Buffer.alloc(array_buffer.byteLength);
-  var view = new Uint8Array(array_buffer);
-  for (var i = 0; i < buffer.length; ++i) {
-    buffer[i] = view[i];
-  }
-  return buffer;
-}
+};
 
 const ReadFileBytes = async (filePath, offset, size) => {
   const sharedBuffer = Buffer.alloc(size);
@@ -121,13 +96,7 @@ const ReadFileBytes = async (filePath, offset, size) => {
   return BufferToArrayBuffer(sharedBuffer);
 };
 
-/**
- *
- * @param fd
- * @param sharedBuffer
- * @param offset
- */
-function ReadBytes(fd, sharedBuffer, offset) {
+const ReadBytes = async (fd, sharedBuffer, offset) => {
   return new Promise((resolve, reject) => {
     fs.read(fd, sharedBuffer, 0, sharedBuffer.length, offset, (err) => {
       if (err) {
@@ -136,4 +105,22 @@ function ReadBytes(fd, sharedBuffer, offset) {
       resolve();
     });
   });
-}
+};
+
+const BufferToArrayBuffer = (buffer) => {
+  const arrayBuffer = new ArrayBuffer(buffer.length);
+  const view = new Uint8Array(arrayBuffer);
+  for (let i = 0; i < buffer.length; ++i) {
+    view[i] = buffer[i];
+  }
+  return arrayBuffer;
+};
+
+const ArrayBufferToBuffer = (array_buffer) => {
+  var buffer = Buffer.alloc(array_buffer.byteLength);
+  var view = new Uint8Array(array_buffer);
+  for (var i = 0; i < buffer.length; ++i) {
+    buffer[i] = view[i];
+  }
+  return buffer;
+};
