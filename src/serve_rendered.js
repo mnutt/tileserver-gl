@@ -19,12 +19,7 @@ import polyline from '@mapbox/polyline';
 import proj4 from 'proj4';
 import request from 'request';
 import { getFontsPbf, getTileUrls, fixTileJSONCenter } from './utils.js';
-import {
-  PMtilesOpen,
-  PMtilesClose,
-  GetPMtilesInfo,
-  GetPMtilesTile,
-} from './pmtiles_adapter.js';
+import { PMtilesOpen, GetPMtilesInfo, GetPMtilesTile } from './pmtiles_adapter.js';
 
 const FLOAT_PATTERN = '[+-]?(?:\\d+|\\d+.?\\d+)';
 const PATH_PATTERN =
@@ -1496,10 +1491,10 @@ export const serve_rendered = {
         }
 
         if (source_type === 'pmtiles') {
-          let FileDescriptor = PMtilesOpen(inputFile);
-          const info = await GetPMtilesInfo(FileDescriptor);
+          let FileOpenInfo = PMtilesOpen(inputFile);
+          const info = await GetPMtilesInfo(FileOpenInfo.pmtiles);
           const metadata = info.metadata;
-          map.sources[metadata.name.toLowerCase()] = FileDescriptor;
+          map.sources[metadata.name.toLowerCase()] = FileOpenInfo.pmtiles;
           map.source_types[metadata.name.toLowerCase()] = 'pmtiles';
 
           if (!repoobj.dataProjWGStoInternalWGS && metadata.proj4) {

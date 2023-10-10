@@ -11,12 +11,7 @@ import Pbf from 'pbf';
 import { VectorTile } from '@mapbox/vector-tile';
 
 import { getTileUrls, fixTileJSONCenter } from './utils.js';
-import {
-  PMtilesOpen,
-  PMtilesClose,
-  GetPMtilesInfo,
-  GetPMtilesTile,
-} from './pmtiles_adapter.js';
+import { PMtilesOpen, GetPMtilesInfo, GetPMtilesTile } from './pmtiles_adapter.js';
 
 export const serve_data = {
   init: (options, repo) => {
@@ -214,10 +209,10 @@ export const serve_data = {
     let source;
     let source_type;
     if (inputType === 'pmtiles') {
-      const FileDescriptor = PMtilesOpen(inputFile);
-      const info = await GetPMtilesInfo(FileDescriptor);
+      let FileOpenInfo = PMtilesOpen(inputFile);
+      const info = await GetPMtilesInfo(FileOpenInfo.pmtiles);
       const metadata = info.metadata;
-      source = FileDescriptor;
+      source = FileOpenInfo.pmtiles;
       source_type = 'pmtiles';
 
       tileJSON['name'] = id;

@@ -2,15 +2,25 @@ import fs from 'node:fs';
 import PMTiles from 'pmtiles';
 
 export const PMtilesOpen = (FilePath) => {
-  const fd = fs.openSync(FilePath, 'r');
-  return fd;
+  let pmtiles = undefined;
+  let fd = undefined;
+
+  if(isValidHttpUrl(FilePath)) {
+    const source = new PMTiles.FetchSource(FilePath)
+    pmtiles = new PMTiles.PMTiles(source);
+  } else {
+    fd = fs.openSync(FilePath, 'r');
+    const source = new PMTilesFileSource(fd);
+    pmtiles = new PMTiles.PMTiles(source);
+  }
+  return { pmtiles: pmtiles, fd: fd };
 };
 
 export const PMtilesClose = (fd) => {
   fs.closeSync(fd);
 };
 
-const PMTilesFileDescriptorSource = class {
+const PMTilesFileSource = class {
   constructor(fd) {
     this.fd = fd;
   }
@@ -35,9 +45,7 @@ const ReadBytes = async (fd, buffer, offset) => {
   });
 };
 
-export const GetPMtilesInfo = async (fd) => {
-  const source = new PMTilesFileDescriptorSource(fd);
-  const pmtiles = new PMTiles.PMTiles(source);
+export const GetPMtilesInfo = async (pmtiles) => {
   const header = await pmtiles.getHeader();
   const metadata = await pmtiles.getMetadata();
 
@@ -54,9 +62,7 @@ export const GetPMtilesInfo = async (fd) => {
   return { header: header, metadata: metadata };
 };
 
-export const GetPMtilesTile = async (fd, z, x, y) => {
-  const source = new PMTilesFileDescriptorSource(fd);
-  const pmtiles = new PMTiles.PMTiles(source);
+export const GetPMtilesTile = async (pmtiles, z, x, y) => {
   const header = await pmtiles.getHeader();
   const TileType = GetPmtilesTileType(header.tileType);
   let zxyTile = await pmtiles.getZxy(z, x, y);
@@ -116,3 +122,15 @@ const ArrayBufferToBuffer = (array_buffer) => {
   }
   return buffer;
 };
+
+function isValidHttpUrl(string) {
+  let url;
+  
+  try {
+    url = new URL(string);
+  } catch (_) {
+    return false;  
+  }
+
+  return url.protocol === "http:" || url.protocol === "https:";
+}
