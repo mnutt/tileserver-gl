@@ -36,7 +36,7 @@ program
   )
   .option(
     '--mbtiles <file>',
-    '(DEPRECIATED) MBTiles file (uses demo configuration);\n' +
+    '(DEPRECIATED) MBTiles file\n' +
       '\t                  ignored if file is also specified' +
       '\t                  ignored if the configuration file is also specified',
   )
