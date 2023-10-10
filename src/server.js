@@ -181,15 +181,28 @@ function start(opts) {
         item,
         id,
         opts.publicUrl,
-        (mbtiles, fromData) => {
+        (fileid, fromData) => {
           let dataItemId;
           for (const id of Object.keys(data)) {
             if (fromData) {
-              if (id === mbtiles) {
+              if (id === fileid) {
                 dataItemId = id;
               }
             } else {
-              if (data[id].mbtiles === mbtiles) {
+              if (
+                data[id].mbtiles !== undefined &&
+                data[id].mbtiles === fileid
+              ) {
+                dataItemId = id;
+              } else if (
+                data[id].pmtiles !== undefined &&
+                data[id].pmtiles === fileid
+              ) {
+                dataItemId = id;
+              } else if (
+                data[id].filename !== undefined &&
+                data[id].filename === fileid
+              ) {
                 dataItemId = id;
               }
             }
@@ -200,14 +213,14 @@ function start(opts) {
           } else {
             if (fromData || !allowMoreData) {
               console.log(
-                `ERROR: style "${item.style}" using unknown mbtiles "${mbtiles}"! Skipping...`,
+                `ERROR: style "${item.style}" using unknown mbtiles "${fileid}"! Skipping...`,
               );
               return undefined;
             } else {
-              let id = mbtiles.substr(0, mbtiles.lastIndexOf('.')) || mbtiles;
+              let id = fileid.substr(0, fileid.lastIndexOf('.')) || fileid;
               while (data[id]) id += '_';
               data[id] = {
-                mbtiles: mbtiles,
+                filename: fileid,
               };
               return id;
             }
@@ -229,14 +242,24 @@ function start(opts) {
             item,
             id,
             opts.publicUrl,
-            (mbtiles) => {
-              let mbtilesFile;
+            (fileid) => {
+              let inputFile;
+              let fileType;
               for (const id of Object.keys(data)) {
-                if (id === mbtiles) {
-                  mbtilesFile = data[id].mbtiles;
+                if (id === fileid) {
+                  if (data[id].pmtiles !== undefined) {
+                    inputFile = data[id].pmtiles;
+                    fileType = 'pmtiles';
+                  } else if (data[id].mbtiles !== undefined) {
+                    inputFile = data[id].mbtiles;
+                    fileType = 'mbtiles';
+                  } else if (data[id].filename !== undefined) {
+                    inputFile = data[id].fileid;
+                    fileType = inputFile.split('.').pop().toLowerCase();
+                  }
                 }
               }
-              return mbtilesFile;
+              return { inputfile: inputFile, filetype: fileType };
             },
           ),
         );
@@ -264,8 +287,12 @@ function start(opts) {
 
   for (const id of Object.keys(data)) {
     const item = data[id];
-    if (!item.mbtiles || item.mbtiles.length === 0) {
-      console.log(`Missing "mbtiles" property for ${id}`);
+    if (item.pmtiles && item.pmtiles.length !== 0) {
+      // valid pmtiles
+    } else if (item.mbtiles && item.mbtiles.length !== 0) {
+      // valid mbtiles
+    } else {
+      console.log(`Missing "pmtiles" or "mbtiles" property for ${id}`);
       continue;
     }
 

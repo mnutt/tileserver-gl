@@ -1,18 +1,25 @@
 import fs from 'node:fs';
 import PMTiles from 'pmtiles';
 
-const PMTilesLocalSource = class {
-  constructor(file) {
-    this.file = file;
+export const PMtilesOpen = (FilePath) => {
+  const fd = fs.openSync(FilePath, 'r');
+  return fd;
+};
+
+export const PMtilesClose = (fd) => {
+  fs.closeSync(fd);
+};
+
+const PMTilesFileDescriptorSource = class {
+  constructor(fd) {
+    this.fd = fd;
   }
   getKey() {
-    return this.file.name;
+    return this.fd;
   }
   async getBytes(offset, length) {
     const buffer = Buffer.alloc(length);
-    const fd = fs.openSync(this.file, 'r'); //Open the file in read mode
-    await ReadBytes(fd, buffer, offset); //Read the specifed bytes from the file
-    fs.closeSync(fd); //close the file
+    await ReadBytes(this.fd, buffer, offset);
     return { data: BufferToArrayBuffer(buffer) };
   }
 };
@@ -28,8 +35,8 @@ const ReadBytes = async (fd, buffer, offset) => {
   });
 };
 
-export const GetPMtilesInfo = async (pmtilesFile) => {
-  const source = new PMTilesLocalSource(pmtilesFile);
+export const GetPMtilesInfo = async (fd) => {
+  const source = new PMTilesFileDescriptorSource(fd);
   const pmtiles = new PMTiles.PMTiles(source);
   const header = await pmtiles.getHeader();
   const metadata = await pmtiles.getMetadata();
@@ -47,8 +54,8 @@ export const GetPMtilesInfo = async (pmtilesFile) => {
   return { header: header, metadata: metadata };
 };
 
-export const GetPMtilesTile = async (pmtilesFile, z, x, y) => {
-  const source = new PMTilesLocalSource(pmtilesFile);
+export const GetPMtilesTile = async (fd, z, x, y) => {
+  const source = new PMTilesFileDescriptorSource(fd);
   const pmtiles = new PMTiles.PMTiles(source);
   const header = await pmtiles.getHeader();
   const TileType = GetPmtilesTileType(header.tileType);

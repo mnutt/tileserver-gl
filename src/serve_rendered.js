@@ -6,8 +6,9 @@ import path from 'path';
 import url from 'url';
 import util from 'util';
 import zlib from 'zlib';
-import sharp from 'sharp'; // sharp has to be required before node-canvas. see https://github.com/lovell/sharp/issues/371
 import { createCanvas, Image } from 'canvas';
+import sharp from 'sharp'; // sharp has to be required before node-canvas on linux but after it on windows. see https://github.com/lovell/sharp/issues/371
+//import { createCanvas, Image } from 'canvas';
 import clone from 'clone';
 import Color from 'color';
 import express from 'express';
@@ -19,7 +20,12 @@ import polyline from '@mapbox/polyline';
 import proj4 from 'proj4';
 import request from 'request';
 import { getFontsPbf, getTileUrls, fixTileJSONCenter } from './utils.js';
-import { GetPMtilesInfo, GetPMtilesTile } from './pmtiles_adapter.js';
+import {
+  PMtilesOpen,
+  PMtilesClose,
+  GetPMtilesInfo,
+  GetPMtilesTile,
+} from './pmtiles_adapter.js';
 
 const FLOAT_PATTERN = '[+-]?(?:\\d+|\\d+.?\\d+)';
 const PATH_PATTERN =
@@ -1211,6 +1217,7 @@ export const serve_rendered = {
       renderers: [],
       renderers_static: [],
       sources: {},
+      source_types: {},
     };
 
     let styleJSON;
@@ -1221,7 +1228,7 @@ export const serve_rendered = {
           ratio: ratio,
           request: async (req, callback) => {
             const protocol = req.url.split(':')[0];
-            console.log('Handling request:', req);
+            // console.log('Handling request:', req);
             if (protocol === 'sprites') {
               const dir = options.paths[protocol];
               const file = unescape(req.url).substring(protocol.length + 3);
@@ -1246,10 +1253,11 @@ export const serve_rendered = {
                   callback(err, { data: null });
                 },
               );
-            } else if (protocol === 'mbtiles') {
+            } else if (protocol === 'mbtiles' || protocol === 'pmtiles') {
               const parts = req.url.split('/');
               const sourceId = parts[2];
               const source = map.sources[sourceId];
+              const source_type = map.source_types[sourceId];
               const sourceInfo = styleJSON.sources[sourceId];
 
               const z = parts[3] | 0;
@@ -1257,17 +1265,8 @@ export const serve_rendered = {
               const y = parts[5].split('.')[0] | 0;
               const format = parts[5].split('.')[1];
 
-              if (
-                typeof map.sources[sourceId] === 'string' &&
-                map.sources[sourceId].split('.').pop().toLowerCase() ===
-                  'pmtiles'
-              ) {
-                let tileinfo = await GetPMtilesTile(
-                  map.sources[sourceId],
-                  z,
-                  x,
-                  y,
-                );
+              if (source_type === 'pmtiles') {
+                let tileinfo = await GetPMtilesTile(source, z, x, y);
                 let data = tileinfo.data;
                 let headers = tileinfo.header;
                 if (data == undefined) {
@@ -1301,7 +1300,7 @@ export const serve_rendered = {
 
                   callback(null, response);
                 }
-              } else {
+              } else if (source_type === 'mbtiles') {
                 source.getTile(z, x, y, (err, data, headers) => {
                   if (err) {
                     if (options.verbose)
@@ -1463,39 +1462,46 @@ export const serve_rendered = {
 
     const queue = [];
     for (const name of Object.keys(styleJSON.sources)) {
-      let source = styleJSON.sources[name];
+      const source = styleJSON.sources[name];
       const url = source.url;
+      let source_type;
 
       if (url && url.lastIndexOf('mbtiles:', 0) === 0) {
         // found mbtiles source, replace with info from local file
         delete source.url;
 
-        let mbtilesFile = url.substring('mbtiles://'.length);
+        let inputFile = url.replace('pmtiles://', '').replace('mbtiles://', '');
         const fromData =
-          mbtilesFile[0] === '{' && mbtilesFile[mbtilesFile.length - 1] === '}';
+          inputFile[0] === '{' && inputFile[inputFile.length - 1] === '}';
 
         if (fromData) {
-          mbtilesFile = mbtilesFile.substr(1, mbtilesFile.length - 2);
-          const mapsTo = (params.mapping || {})[mbtilesFile];
+          inputFile = inputFile.substr(1, inputFile.length - 2);
+          const mapsTo = (params.mapping || {})[inputFile];
           if (mapsTo) {
-            mbtilesFile = mapsTo;
+            inputFile = mapsTo;
           }
-          mbtilesFile = dataResolver(mbtilesFile);
-          if (!mbtilesFile) {
-            console.error(`ERROR: data "${mbtilesFile}" not found!`);
+
+          const DataInfo = dataResolver(inputFile);
+          if (DataInfo.inputfile) {
+            inputFile = DataInfo.inputfile;
+            source_type = DataInfo.filetype;
+          } else {
+            console.error(`ERROR: data "${inputFile}" not found!`);
             process.exit(1);
           }
         }
 
-        const mbtilesFileStats = fs.statSync(mbtilesFile);
-        if (!mbtilesFileStats.isFile() || mbtilesFileStats.size === 0) {
-          throw Error(`Not valid MBTiles file: ${mbtilesFile}`);
+        const inputFileStats = fs.statSync(inputFile);
+        if (!inputFileStats.isFile() || inputFileStats.size === 0) {
+          throw Error(`Not valid MBTiles file: ${inputFile}`);
         }
-        const extension = mbtilesFile.split('.').pop().toLowerCase();
-        if (extension === 'pmtiles') {
-          const info = await GetPMtilesInfo(mbtilesFile);
+
+        if (source_type === 'pmtiles') {
+          let FileDescriptor = PMtilesOpen(inputFile);
+          const info = await GetPMtilesInfo(FileDescriptor);
           const metadata = info.metadata;
-          map.sources[metadata.name.toLowerCase()] = mbtilesFile;
+          map.sources[metadata.name.toLowerCase()] = FileDescriptor;
+          map.source_types[metadata.name.toLowerCase()] = 'pmtiles';
 
           if (!repoobj.dataProjWGStoInternalWGS && metadata.proj4) {
             // how to do this for multiple sources with different proj4 defs?
@@ -1514,7 +1520,6 @@ export const serve_rendered = {
             `mbtiles://${name}/{z}/{x}/{y}.${metadata.format || 'pbf'}`,
           ];
           delete source.scheme;
-          //console.log(source);
 
           if (
             !attributionOverride &&
@@ -1531,62 +1536,60 @@ export const serve_rendered = {
         } else {
           queue.push(
             new Promise((resolve, reject) => {
-              mbtilesFile = path.resolve(options.paths.mbtiles, mbtilesFile);
-              const mbtilesFileStats = fs.statSync(mbtilesFile);
-              if (!mbtilesFileStats.isFile() || mbtilesFileStats.size === 0) {
-                throw Error(`Not valid MBTiles file: ${mbtilesFile}`);
+              inputFile = path.resolve(options.paths.mbtiles, inputFile);
+              const inputFileStats = fs.statSync(inputFile);
+              if (!inputFileStats.isFile() || inputFileStats.size === 0) {
+                throw Error(`Not valid MBTiles file: ${inputFile}`);
               }
-              map.sources[name] = new MBTiles(
-                mbtilesFile + '?mode=ro',
-                (err) => {
-                  map.sources[name].getInfo((err, info) => {
-                    if (err) {
-                      console.error(err);
-                      return;
-                    }
+              map.sources[name] = new MBTiles(inputFile + '?mode=ro', (err) => {
+                map.sources[name].getInfo((err, info) => {
+                  if (err) {
+                    console.error(err);
+                    return;
+                  }
+                  map.source_types[name] = 'mbtiles';
 
-                    if (!repoobj.dataProjWGStoInternalWGS && info.proj4) {
-                      // how to do this for multiple sources with different proj4 defs?
-                      const to3857 = proj4('EPSG:3857');
-                      const toDataProj = proj4(info.proj4);
-                      repoobj.dataProjWGStoInternalWGS = (xy) =>
-                        to3857.inverse(toDataProj.forward(xy));
-                    }
+                  if (!repoobj.dataProjWGStoInternalWGS && info.proj4) {
+                    // how to do this for multiple sources with different proj4 defs?
+                    const to3857 = proj4('EPSG:3857');
+                    const toDataProj = proj4(info.proj4);
+                    repoobj.dataProjWGStoInternalWGS = (xy) =>
+                      to3857.inverse(toDataProj.forward(xy));
+                  }
 
-                    const type = source.type;
-                    info['extension'] = 'mbtiles';
-                    Object.assign(source, info);
-                    source.type = type;
-                    source.tiles = [
-                      // meta url which will be detected when requested
-                      `mbtiles://${name}/{z}/{x}/{y}.${info.format || 'pbf'}`,
-                    ];
-                    delete source.scheme;
+                  const type = source.type;
+                  info['extension'] = 'mbtiles';
+                  Object.assign(source, info);
+                  source.type = type;
+                  source.tiles = [
+                    // meta url which will be detected when requested
+                    `mbtiles://${name}/{z}/{x}/{y}.${info.format || 'pbf'}`,
+                  ];
+                  delete source.scheme;
 
-                    if (options.dataDecoratorFunc) {
-                      source = options.dataDecoratorFunc(
-                        name,
-                        'tilejson',
-                        source,
-                      );
-                    }
+                  if (options.dataDecoratorFunc) {
+                    source = options.dataDecoratorFunc(
+                      name,
+                      'tilejson',
+                      source,
+                    );
+                  }
 
-                    if (
-                      !attributionOverride &&
-                      source.attribution &&
-                      source.attribution.length > 0
-                    ) {
-                      if (!tileJSON.attribution.includes(source.attribution)) {
-                        if (tileJSON.attribution.length > 0) {
-                          tileJSON.attribution += ' | ';
-                        }
-                        tileJSON.attribution += source.attribution;
+                  if (
+                    !attributionOverride &&
+                    source.attribution &&
+                    source.attribution.length > 0
+                  ) {
+                    if (!tileJSON.attribution.includes(source.attribution)) {
+                      if (tileJSON.attribution.length > 0) {
+                        tileJSON.attribution += ' | ';
                       }
+                      tileJSON.attribution += source.attribution;
                     }
-                    resolve();
-                  });
-                },
-              );
+                  }
+                  resolve();
+                });
+              });
             }),
           );
         }

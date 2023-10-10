@@ -11,7 +11,12 @@ import Pbf from 'pbf';
 import { VectorTile } from '@mapbox/vector-tile';
 
 import { getTileUrls, fixTileJSONCenter } from './utils.js';
-import { GetPMtilesInfo, GetPMtilesTile } from './pmtiles_adapter.js';
+import {
+  PMtilesOpen,
+  PMtilesClose,
+  GetPMtilesInfo,
+  GetPMtilesTile,
+} from './pmtiles_adapter.js';
 
 export const serve_data = {
   init: (options, repo) => {
@@ -187,22 +192,33 @@ export const serve_data = {
     return app;
   },
   add: async (options, repo, params, id, publicUrl) => {
-    const mbtilesFile = path.resolve(options.paths.mbtiles, params.mbtiles);
+    let inputFile;
+    let inputType;
+    if (params.pmtiles) {
+      inputFile = path.resolve(options.paths.pmtiles, params.pmtiles);
+      inputType = 'pmtiles';
+    } else if (params.mbtiles) {
+      inputFile = path.resolve(options.paths.mbtiles, params.mbtiles);
+      inputType = 'mbtiles';
+    }
+
     let tileJSON = {
       tiles: params.domains || options.domains,
     };
 
-    const mbtilesFileStats = fs.statSync(mbtilesFile);
-    if (!mbtilesFileStats.isFile() || mbtilesFileStats.size === 0) {
-      throw Error(`Not valid MBTiles file: ${mbtilesFile}`);
+    const inputFileStats = fs.statSync(inputFile);
+    if (!inputFileStats.isFile() || inputFileStats.size === 0) {
+      throw Error(`Not valid input file: ${inputFile}`);
     }
 
-    const extension = mbtilesFile.split('.').pop().toLowerCase();
     let source;
-    if (extension === 'pmtiles') {
-      const info = await GetPMtilesInfo(mbtilesFile);
+    let source_type;
+    if (inputType === 'pmtiles') {
+      const FileDescriptor = PMtilesOpen(inputFile);
+      const info = await GetPMtilesInfo(FileDescriptor);
       const metadata = info.metadata;
-      source = mbtilesFile;
+      source = FileDescriptor;
+      source_type = 'pmtiles';
 
       tileJSON['name'] = id;
       tileJSON['format'] = 'pbf';
@@ -220,9 +236,10 @@ export const serve_data = {
       if (options.dataDecoratorFunc) {
         tileJSON = options.dataDecoratorFunc(id, 'tilejson', tileJSON);
       }
-    } else {
+    } else if (inputType === 'mbtiles') {
+      source_type = 'mbtiles';
       const sourceInfoPromise = new Promise((resolve, reject) => {
-        source = new MBTiles(mbtilesFile + '?mode=ro', (err) => {
+        source = new MBTiles(inputFile + '?mode=ro', (err) => {
           if (err) {
             reject(err);
             return;
@@ -261,6 +278,7 @@ export const serve_data = {
       tileJSON,
       publicUrl,
       source,
+      source_type,
     };
   },
 };

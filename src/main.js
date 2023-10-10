@@ -8,7 +8,11 @@ import { fileURLToPath } from 'url';
 import request from 'request';
 import { server } from './server.js';
 import MBTiles from '@mapbox/mbtiles';
-import { GetPMtilesInfo } from './pmtiles_adapter.js';
+import {
+  PMtilesOpen,
+  PMtilesClose,
+  GetPMtilesInfo,
+} from './pmtiles_adapter.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -80,18 +84,18 @@ const startServer = (configPath, config) => {
   });
 };
 
-const startWithInputFile = async (inputfile) => {
-  console.log(`[INFO] Automatically creating config file for ${inputfile}`);
+const startWithinputFile = async (inputFile) => {
+  console.log(`[INFO] Automatically creating config file for ${inputFile}`);
   console.log(`[INFO] Only a basic preview style will be used.`);
   console.log(
     `[INFO] See documentation to learn how to create config.json file.`,
   );
 
-  inputfile = path.resolve(process.cwd(), inputfile);
+  inputFile = path.resolve(process.cwd(), inputFile);
 
-  const inputfileStats = fs.statSync(inputfile);
-  if (!inputfileStats.isFile() || inputfileStats.size === 0) {
-    console.log(`ERROR: Not a valid input file: ${inputfile}`);
+  const inputFileStats = fs.statSync(inputFile);
+  if (!inputFileStats.isFile() || inputFileStats.size === 0) {
+    console.log(`ERROR: Not a valid input file: ${inputFile}`);
     process.exit(1);
   }
 
@@ -106,24 +110,27 @@ const startWithInputFile = async (inputfile) => {
         root: styleDir,
         fonts: 'fonts',
         styles: 'styles',
-        mbtiles: path.dirname(inputfile),
+        mbtiles: path.dirname(inputFile),
+        pmtiles: path.dirname(inputFile),
       },
     },
     styles: {},
     data: {},
   };
 
-  const extension = inputfile.split('.').pop().toLowerCase();
+  const extension = inputFile.split('.').pop().toLowerCase();
   if (extension === 'pmtiles') {
-    const info = await GetPMtilesInfo(inputfile);
+    const FileDescriptor = PMtilesOpen(inputFile);
+    const info = await GetPMtilesInfo(FileDescriptor);
     const metadata = info.metadata;
+    PMtilesClose(FileDescriptor);
 
     if (
       metadata.format === 'pbf' &&
       metadata.name.toLowerCase().indexOf('openmaptiles') > -1
     ) {
       config['data'][`v3`] = {
-        mbtiles: path.basename(inputfile),
+        pmtiles: path.basename(inputFile),
       };
 
       const styles = fs.readdirSync(path.resolve(styleDir, 'styles'));
@@ -143,8 +150,8 @@ const startWithInputFile = async (inputfile) => {
       console.log(
         `WARN: PMTiles not in "openmaptiles" format. Serving raw data only...`,
       );
-      config['data'][(metadata.id || 'mbtiles').replace(/[?/:]/g, '_')] = {
-        mbtiles: path.basename(inputfile),
+      config['data'][(metadata.id || 'pmtiles').replace(/[?/:]/g, '_')] = {
+        pmtiles: path.basename(inputFile),
       };
     }
 
@@ -156,10 +163,10 @@ const startWithInputFile = async (inputfile) => {
 
     return startServer(null, config);
   } else {
-    const instance = new MBTiles(inputfile + '?mode=ro', (err) => {
+    const instance = new MBTiles(inputFile + '?mode=ro', (err) => {
       if (err) {
         console.log('ERROR: Unable to open MBTiles.');
-        console.log(`Make sure ${path.basename(inputfile)} is valid MBTiles.`);
+        console.log(`Make sure ${path.basename(inputFile)} is valid MBTiles.`);
         process.exit(1);
       }
 
@@ -167,7 +174,7 @@ const startWithInputFile = async (inputfile) => {
         if (err || !info) {
           console.log('ERROR: Metadata missing in the MBTiles.');
           console.log(
-            `Make sure ${path.basename(inputfile)} is valid MBTiles.`,
+            `Make sure ${path.basename(inputFile)} is valid MBTiles.`,
           );
           process.exit(1);
         }
@@ -178,7 +185,7 @@ const startWithInputFile = async (inputfile) => {
           info.name.toLowerCase().indexOf('openmaptiles') > -1
         ) {
           config['data'][`v3`] = {
-            mbtiles: path.basename(inputfile),
+            mbtiles: path.basename(inputFile),
           };
 
           const styles = fs.readdirSync(path.resolve(styleDir, 'styles'));
@@ -199,7 +206,7 @@ const startWithInputFile = async (inputfile) => {
             `WARN: MBTiles not in "openmaptiles" format. Serving raw data only...`,
           );
           config['data'][(info.id || 'mbtiles').replace(/[?/:]/g, '_')] = {
-            mbtiles: path.basename(inputfile),
+            mbtiles: path.basename(inputFile),
           };
         }
 
@@ -217,30 +224,30 @@ const startWithInputFile = async (inputfile) => {
 
 fs.stat(path.resolve(opts.config), (err, stats) => {
   if (err || !stats.isFile() || stats.size === 0) {
-    let inputfile;
+    let inputFile;
     if (opts.file) {
-      inputfile = opts.file;
+      inputFile = opts.file;
     } else if (opts.mbtiles) {
-      inputfile = opts.mbtiles;
+      inputFile = opts.mbtiles;
     }
 
-    if (inputfile) {
-      return startWithInputFile(inputfile);
+    if (inputFile) {
+      return startWithinputFile(inputFile);
     } else {
       // try to find in the cwd
       const files = fs.readdirSync(process.cwd());
       for (const filename of files) {
         if (filename.endsWith('.mbtiles') || filename.endsWith('.pmtiles')) {
-          const InputFilesStats = fs.statSync(filename);
-          if (InputFilesStats.isFile() && InputFilesStats.size > 0) {
-            inputfile = filename;
+          const inputFilesStats = fs.statSync(filename);
+          if (inputFilesStats.isFile() && inputFilesStats.size > 0) {
+            inputFile = filename;
             break;
           }
         }
       }
-      if (inputfile) {
-        console.log(`No input file specified, using ${inputfile}`);
-        return startWithInputFile(inputfile);
+      if (inputFile) {
+        console.log(`No input file specified, using ${inputFile}`);
+        return startWithinputFile(inputFile);
       } else {
         const url =
           'https://github.com/maptiler/tileserver-gl/releases/download/v1.3.0/zurich_switzerland.mbtiles';
@@ -248,7 +255,7 @@ fs.stat(path.resolve(opts.config), (err, stats) => {
         const stream = fs.createWriteStream(filename);
         console.log(`No input file found`);
         console.log(`[DEMO] Downloading sample data (${filename}) from ${url}`);
-        stream.on('finish', () => startWithInputFile(filename));
+        stream.on('finish', () => startWithinputFile(filename));
         return request.get(url).pipe(stream);
       }
     }
