@@ -19,7 +19,11 @@ import polyline from '@mapbox/polyline';
 import proj4 from 'proj4';
 import request from 'request';
 import { getFontsPbf, getTileUrls, fixTileJSONCenter } from './utils.js';
-import { PMtilesOpen, GetPMtilesInfo, GetPMtilesTile } from './pmtiles_adapter.js';
+import {
+  PMtilesOpen,
+  GetPMtilesInfo,
+  GetPMtilesTile,
+} from './pmtiles_adapter.js';
 
 const FLOAT_PATTERN = '[+-]?(?:\\d+|\\d+.?\\d+)';
 const PATH_PATTERN =

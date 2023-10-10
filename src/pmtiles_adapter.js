@@ -30,8 +30,8 @@ export const PMtilesOpen = (FilePath) => {
   let pmtiles = undefined;
   let fd = undefined;
 
-  if(isValidHttpUrl(FilePath)) {
-    const source = new PMTiles.FetchSource(FilePath)
+  if (isValidHttpUrl(FilePath)) {
+    const source = new PMTiles.FetchSource(FilePath);
     pmtiles = new PMTiles.PMTiles(source);
   } else {
     fd = fs.openSync(FilePath, 'r');
@@ -123,14 +123,18 @@ const ArrayBufferToBuffer = (array_buffer) => {
   return buffer;
 };
 
+/**
+ *
+ * @param string
+ */
 function isValidHttpUrl(string) {
   let url;
-  
+
   try {
     url = new URL(string);
   } catch (_) {
-    return false;  
+    return false;
   }
 
-  return url.protocol === "http:" || url.protocol === "https:";
+  return url.protocol === 'http:' || url.protocol === 'https:';
 }

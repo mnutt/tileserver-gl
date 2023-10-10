@@ -11,7 +11,11 @@ import Pbf from 'pbf';
 import { VectorTile } from '@mapbox/vector-tile';
 
 import { getTileUrls, fixTileJSONCenter } from './utils.js';
-import { PMtilesOpen, GetPMtilesInfo, GetPMtilesTile } from './pmtiles_adapter.js';
+import {
+  PMtilesOpen,
+  GetPMtilesInfo,
+  GetPMtilesTile,
+} from './pmtiles_adapter.js';
 
 export const serve_data = {
   init: (options, repo) => {
