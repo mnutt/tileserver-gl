@@ -1,6 +1,31 @@
 import fs from 'node:fs';
 import PMTiles from 'pmtiles';
 
+const PMTilesFileSource = class {
+  constructor(fd) {
+    this.fd = fd;
+  }
+  getKey() {
+    return this.fd;
+  }
+  async getBytes(offset, length) {
+    const buffer = Buffer.alloc(length);
+    await ReadFileBytes(this.fd, buffer, offset);
+    return { data: BufferToArrayBuffer(buffer) };
+  }
+};
+
+const ReadFileBytes = async (fd, buffer, offset) => {
+  return new Promise((resolve, reject) => {
+    fs.read(fd, buffer, 0, buffer.length, offset, (err) => {
+      if (err) {
+        return reject(err);
+      }
+      resolve();
+    });
+  });
+};
+
 export const PMtilesOpen = (FilePath) => {
   let pmtiles = undefined;
   let fd = undefined;
@@ -18,31 +43,6 @@ export const PMtilesOpen = (FilePath) => {
 
 export const PMtilesClose = (fd) => {
   fs.closeSync(fd);
-};
-
-const PMTilesFileSource = class {
-  constructor(fd) {
-    this.fd = fd;
-  }
-  getKey() {
-    return this.fd;
-  }
-  async getBytes(offset, length) {
-    const buffer = Buffer.alloc(length);
-    await ReadBytes(this.fd, buffer, offset);
-    return { data: BufferToArrayBuffer(buffer) };
-  }
-};
-
-const ReadBytes = async (fd, buffer, offset) => {
-  return new Promise((resolve, reject) => {
-    fs.read(fd, buffer, 0, buffer.length, offset, (err) => {
-      if (err) {
-        return reject(err);
-      }
-      resolve();
-    });
-  });
 };
 
 export const GetPMtilesInfo = async (pmtiles) => {
