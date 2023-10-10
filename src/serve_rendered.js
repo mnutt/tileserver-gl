@@ -18,7 +18,12 @@ import MBTiles from '@mapbox/mbtiles';
 import polyline from '@mapbox/polyline';
 import proj4 from 'proj4';
 import request from 'request';
-import { getFontsPbf, getTileUrls, fixTileJSONCenter } from './utils.js';
+import {
+  getFontsPbf,
+  getTileUrls,
+  isValidHttpUrl,
+  fixTileJSONCenter,
+} from './utils.js';
 import {
   PMtilesOpen,
   GetPMtilesInfo,
@@ -1489,9 +1494,11 @@ export const serve_rendered = {
           }
         }
 
-        const inputFileStats = fs.statSync(inputFile);
-        if (!inputFileStats.isFile() || inputFileStats.size === 0) {
-          throw Error(`Not valid MBTiles file: ${inputFile}`);
+        if (!isValidHttpUrl(inputFile)) {
+          const inputFileStats = fs.statSync(inputFile);
+          if (!inputFileStats.isFile() || inputFileStats.size === 0) {
+            throw Error(`Not valid PMTiles file: ${inputFile}`);
+          }
         }
 
         if (source_type === 'pmtiles') {

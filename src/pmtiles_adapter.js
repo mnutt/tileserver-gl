@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import PMTiles from 'pmtiles';
+import { isValidHttpUrl } from './utils.js';
 
 const PMTilesFileSource = class {
   constructor(fd) {
@@ -122,19 +123,3 @@ const ArrayBufferToBuffer = (array_buffer) => {
   }
   return buffer;
 };
-
-/**
- *
- * @param string
- */
-function isValidHttpUrl(string) {
-  let url;
-
-  try {
-    url = new URL(string);
-  } catch (_) {
-    return false;
-  }
-
-  return url.protocol === 'http:' || url.protocol === 'https:';
-}

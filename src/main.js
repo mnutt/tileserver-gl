@@ -8,6 +8,7 @@ import { fileURLToPath } from 'url';
 import request from 'request';
 import { server } from './server.js';
 import MBTiles from '@mapbox/mbtiles';
+import { isValidHttpUrl } from './utils.js';
 import {
   PMtilesOpen,
   PMtilesClose,
@@ -91,12 +92,18 @@ const startWithinputFile = async (inputFile) => {
     `[INFO] See documentation to learn how to create config.json file.`,
   );
 
-  inputFile = path.resolve(process.cwd(), inputFile);
+  let inputFilePath;
+  if (isValidHttpUrl(inputFile)) {
+    inputFilePath = process.cwd();
+  } else {
+    inputFile = path.resolve(process.cwd(), inputFile);
+    inputFilePath = path.dirname(inputFile);
 
-  const inputFileStats = fs.statSync(inputFile);
-  if (!inputFileStats.isFile() || inputFileStats.size === 0) {
-    console.log(`ERROR: Not a valid input file: ${inputFile}`);
-    process.exit(1);
+    const inputFileStats = fs.statSync(inputFile);
+    if (!inputFileStats.isFile() || inputFileStats.size === 0) {
+      console.log(`ERROR: Not a valid input file: `);
+      process.exit(1);
+    }
   }
 
   const styleDir = path.resolve(
@@ -110,8 +117,8 @@ const startWithinputFile = async (inputFile) => {
         root: styleDir,
         fonts: 'fonts',
         styles: 'styles',
-        mbtiles: path.dirname(inputFile),
-        pmtiles: path.dirname(inputFile),
+        mbtiles: inputFilePath,
+        pmtiles: inputFilePath,
       },
     },
     styles: {},
@@ -132,9 +139,15 @@ const startWithinputFile = async (inputFile) => {
       metadata.format === 'pbf' &&
       metadata.name.toLowerCase().indexOf('openmaptiles') > -1
     ) {
-      config['data'][`v3`] = {
-        pmtiles: path.basename(inputFile),
-      };
+      if (isValidHttpUrl(inputFile)) {
+        config['data'][`v3`] = {
+          pmtiles: inputFile,
+        };
+      } else {
+        config['data'][`v3`] = {
+          pmtiles: path.basename(inputFile),
+        };
+      }
 
       const styles = fs.readdirSync(path.resolve(styleDir, 'styles'));
       for (const styleName of styles) {
@@ -153,9 +166,15 @@ const startWithinputFile = async (inputFile) => {
       console.log(
         `WARN: PMTiles not in "openmaptiles" format. Serving raw data only...`,
       );
-      config['data'][(metadata.id || 'pmtiles').replace(/[?/:]/g, '_')] = {
-        pmtiles: path.basename(inputFile),
-      };
+      if (isValidHttpUrl(inputFile)) {
+        config['data'][(metadata.id || 'pmtiles').replace(/[?/:]/g, '_')] = {
+          pmtiles: inputFile,
+        };
+      } else {
+        config['data'][(metadata.id || 'pmtiles').replace(/[?/:]/g, '_')] = {
+          pmtiles: path.basename(inputFile),
+        };
+      }
     }
 
     if (opts.verbose) {
@@ -166,6 +185,10 @@ const startWithinputFile = async (inputFile) => {
 
     return startServer(null, config);
   } else {
+    if (isValidHttpUrl(inputFile)) {
+      console.log(`ERROR: MBTiles does not support web based files: `);
+      process.exit(1);
+    }
     const instance = new MBTiles(inputFile + '?mode=ro', (err) => {
       if (err) {
         console.log('ERROR: Unable to open MBTiles.');

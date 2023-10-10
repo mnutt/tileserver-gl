@@ -10,7 +10,7 @@ import MBTiles from '@mapbox/mbtiles';
 import Pbf from 'pbf';
 import { VectorTile } from '@mapbox/vector-tile';
 
-import { getTileUrls, fixTileJSONCenter } from './utils.js';
+import { getTileUrls, isValidHttpUrl, fixTileJSONCenter } from './utils.js';
 import {
   PMtilesOpen,
   GetPMtilesInfo,
@@ -194,20 +194,32 @@ export const serve_data = {
     let inputFile;
     let inputType;
     if (params.pmtiles) {
-      inputFile = path.resolve(options.paths.pmtiles, params.pmtiles);
       inputType = 'pmtiles';
+      if (isValidHttpUrl(params.pmtiles)) {
+        inputFile = params.pmtiles;
+      } else {
+        inputFile = path.resolve(options.paths.pmtiles, params.pmtiles);
+      }
     } else if (params.mbtiles) {
-      inputFile = path.resolve(options.paths.mbtiles, params.mbtiles);
       inputType = 'mbtiles';
+      if (isValidHttpUrl(params.pmtiles)) {
+        throw Error(
+          `ERROR: MBTiles does not support web based files: ${inputFile}`,
+        );
+      } else {
+        inputFile = path.resolve(options.paths.mbtiles, params.mbtiles);
+      }
     }
 
     let tileJSON = {
       tiles: params.domains || options.domains,
     };
 
-    const inputFileStats = fs.statSync(inputFile);
-    if (!inputFileStats.isFile() || inputFileStats.size === 0) {
-      throw Error(`Not valid input file: ${inputFile}`);
+    if (!isValidHttpUrl(inputFile)) {
+      const inputFileStats = fs.statSync(inputFile);
+      if (!inputFileStats.isFile() || inputFileStats.size === 0) {
+        throw Error(`Not valid input file: ${inputFile}`);
+      }
     }
 
     let source;
