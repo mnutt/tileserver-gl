@@ -1469,7 +1469,7 @@ export const serve_rendered = {
       const url = source.url;
       let source_type;
 
-      if (url && url.lastIndexOf('mbtiles:', 0) === 0) {
+      if (url && (url.lastIndexOf('pmtiles:', 0) === 0 || url.lastIndexOf('mbtiles:', 0) === 0)) {
         // found mbtiles source, replace with info from local file
         delete source.url;
 
@@ -1494,12 +1494,14 @@ export const serve_rendered = {
           }
         }
 
+        console.log('ren1:' + inputFile);
         if (!isValidHttpUrl(inputFile)) {
           const inputFileStats = fs.statSync(inputFile);
           if (!inputFileStats.isFile() || inputFileStats.size === 0) {
             throw Error(`Not valid PMTiles file: ${inputFile}`);
           }
         }
+        console.log('ren1:' + inputFile);
 
         if (source_type === 'pmtiles') {
           let FileOpenInfo = PMtilesOpen(inputFile);
@@ -1522,7 +1524,7 @@ export const serve_rendered = {
           source.type = type;
           source.tiles = [
             // meta url which will be detected when requested
-            `mbtiles://${name}/{z}/{x}/{y}.${metadata.format || 'pbf'}`,
+            `pmtiles://${name}/{z}/{x}/{y}.${metadata.format || 'pbf'}`,
           ];
           delete source.scheme;
 
