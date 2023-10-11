@@ -201,11 +201,6 @@ function start(opts) {
                 data[id].pmtiles === fileid
               ) {
                 dataItemId = id;
-              } else if (
-                data[id].filename !== undefined &&
-                data[id].filename === fileid
-              ) {
-                dataItemId = id;
               }
             }
           }
@@ -215,14 +210,14 @@ function start(opts) {
           } else {
             if (fromData || !allowMoreData) {
               console.log(
-                `ERROR: style "${item.style}" using unknown mbtiles "${fileid}"! Skipping...`,
+                `ERROR: style "${item.style}" using unknown file "${fileid}"! Skipping...`,
               );
               return undefined;
             } else {
               let id = fileid.substr(0, fileid.lastIndexOf('.')) || fileid;
               while (data[id]) id += '_';
               data[id] = {
-                filename: fileid,
+                mbtiles: fileid,
               };
               return id;
             }
@@ -250,14 +245,11 @@ function start(opts) {
               for (const id of Object.keys(data)) {
                 if (id === fileid) {
                   if (data[id].pmtiles !== undefined) {
-                    inputFile = data[id].pmtiles;
+                    inputFile = path.resolve(options.paths.pmtiles, data[id].pmtiles);
                     fileType = 'pmtiles';
                   } else if (data[id].mbtiles !== undefined) {
-                    inputFile = data[id].mbtiles;
+                    inputFile = path.resolve(options.paths.mbtiles, data[id].mbtiles);
                     fileType = 'mbtiles';
-                  } else if (data[id].filename !== undefined) {
-                    inputFile = data[id].fileid;
-                    fileType = inputFile.split('.').pop().toLowerCase();
                   }
                 }
               }
