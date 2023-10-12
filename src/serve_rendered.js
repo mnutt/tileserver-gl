@@ -1469,7 +1469,11 @@ export const serve_rendered = {
       let source = styleJSON.sources[name];
       const url = source.url;
 
-      if (url && (url.lastIndexOf('pmtiles:', 0) === 0 || url.lastIndexOf('mbtiles:', 0) === 0)) {
+      if (
+        url &&
+        (url.lastIndexOf('pmtiles:', 0) === 0 ||
+          url.lastIndexOf('mbtiles:', 0) === 0)
+      ) {
         // found mbtiles source, replace with info from local file
         delete source.url;
 

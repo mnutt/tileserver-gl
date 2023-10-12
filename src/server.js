@@ -245,10 +245,16 @@ function start(opts) {
               for (const id of Object.keys(data)) {
                 if (id === fileid) {
                   if (data[id].pmtiles !== undefined) {
-                    inputFile = path.resolve(options.paths.pmtiles, data[id].pmtiles);
+                    inputFile = path.resolve(
+                      options.paths.pmtiles,
+                      data[id].pmtiles,
+                    );
                     fileType = 'pmtiles';
                   } else if (data[id].mbtiles !== undefined) {
-                    inputFile = path.resolve(options.paths.mbtiles, data[id].mbtiles);
+                    inputFile = path.resolve(
+                      options.paths.mbtiles,
+                      data[id].mbtiles,
+                    );
                     fileType = 'mbtiles';
                   }
                 }
