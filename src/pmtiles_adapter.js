@@ -54,7 +54,6 @@ export const GetPMtilesInfo = async (pmtiles) => {
   metadata['format'] = GetPmtilesTileType(header.tileType).type;
   metadata['minzoom'] = header.minZoom;
   metadata['maxzoom'] = header.maxZoom;
-  console.log('maxzoom:' + header.maxZoom)
 
   if(header.minLon && header.minLat && header.maxLon && header.maxLat) {
     metadata['bounds'] = [header.minLon, header.minLat, header.maxLon, header.maxLat];
