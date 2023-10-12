@@ -1494,21 +1494,19 @@ export const serve_rendered = {
           }
         }
 
-        console.log('ren1:' + inputFile);
         if (!isValidHttpUrl(inputFile)) {
           const inputFileStats = fs.statSync(inputFile);
           if (!inputFileStats.isFile() || inputFileStats.size === 0) {
             throw Error(`Not valid PMTiles file: ${inputFile}`);
           }
         }
-        console.log('ren1:' + inputFile);
 
         if (source_type === 'pmtiles') {
           let FileOpenInfo = PMtilesOpen(inputFile);
           const info = await GetPMtilesInfo(FileOpenInfo.pmtiles);
           const metadata = info.metadata;
-          map.sources[metadata.name.toLowerCase()] = FileOpenInfo.pmtiles;
-          map.source_types[metadata.name.toLowerCase()] = 'pmtiles';
+          map.sources[name] = FileOpenInfo.pmtiles;
+          map.source_types[name] = 'pmtiles';
 
           if (!repoobj.dataProjWGStoInternalWGS && metadata.proj4) {
             // how to do this for multiple sources with different proj4 defs?
