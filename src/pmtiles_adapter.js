@@ -55,18 +55,27 @@ export const GetPMtilesInfo = async (pmtiles) => {
   metadata['minzoom'] = header.minZoom;
   metadata['maxzoom'] = header.maxZoom;
 
-  if(header.minLon && header.minLat && header.maxLon && header.maxLat) {
-    metadata['bounds'] = [header.minLon, header.minLat, header.maxLon, header.maxLat];
+  if (header.minLon && header.minLat && header.maxLon && header.maxLat) {
+    metadata['bounds'] = [
+      header.minLon,
+      header.minLat,
+      header.maxLon,
+      header.maxLat,
+    ];
   } else {
     metadata['bounds'] = [-180, -85.05112877980659, 180, 85.0511287798066];
   }
 
-  if(header.centerLon && header.centerLat && header.centerZoom) {
-    metadata['center'] = [header.centerLon, header.centerLat, header.centerZoom];
+  if (header.centerZoom) {
+    metadata['center'] = [
+      header.centerLon,
+      header.centerLat,
+      header.centerZoom,
+    ];
   } else {
     metadata['center'] = [
-      (parseInt(metadata['bounds'][0]) + parseInt(metadata['bounds'][2])) / 2,
-      (parseInt(metadata['bounds'][1]) + parseInt(metadata['bounds'][3])) / 2,
+      header.centerLon,
+      header.centerLat,
       parseInt(metadata['maxzoom']) / 2,
     ];
   }
