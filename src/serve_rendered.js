@@ -1465,9 +1465,9 @@ export const serve_rendered = {
 
     const queue = [];
     for (const name of Object.keys(styleJSON.sources)) {
-      const url = source.url;
-      let source = styleJSON.sources[name];
       let source_type;
+      let source = styleJSON.sources[name];
+      const url = source.url;
 
       if (url && (url.lastIndexOf('pmtiles:', 0) === 0 || url.lastIndexOf('mbtiles:', 0) === 0)) {
         // found mbtiles source, replace with info from local file
