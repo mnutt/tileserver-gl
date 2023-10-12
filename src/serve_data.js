@@ -226,8 +226,7 @@ export const serve_data = {
     let source_type;
     if (inputType === 'pmtiles') {
       let FileOpenInfo = PMtilesOpen(inputFile);
-      const info = await GetPMtilesInfo(FileOpenInfo.pmtiles);
-      const metadata = info.metadata;
+      const metadata = await GetPMtilesInfo(FileOpenInfo.pmtiles);
       source = FileOpenInfo.pmtiles;
       source_type = 'pmtiles';
 

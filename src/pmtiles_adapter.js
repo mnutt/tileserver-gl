@@ -60,7 +60,7 @@ export const GetPMtilesInfo = async (pmtiles) => {
   metadata['maxzoom'] = header.maxZoom;
   metadata['format'] = GetPmtilesTileType(header.tileType).type;
 
-  return { header: header, metadata: metadata };
+  return metadata;
 };
 
 export const GetPMtilesTile = async (pmtiles, z, x, y) => {

@@ -1503,8 +1503,7 @@ export const serve_rendered = {
 
         if (source_type === 'pmtiles') {
           let FileOpenInfo = PMtilesOpen(inputFile);
-          const info = await GetPMtilesInfo(FileOpenInfo.pmtiles);
-          const metadata = info.metadata;
+          const metadata = await GetPMtilesInfo(FileOpenInfo.pmtiles);
           map.sources[name] = FileOpenInfo.pmtiles;
           map.source_types[name] = 'pmtiles';
 
