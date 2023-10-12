@@ -51,14 +51,26 @@ export const GetPMtilesInfo = async (pmtiles) => {
   const metadata = await pmtiles.getMetadata();
 
   //Add missing metadata from header
-  const bounds = [header.minLon, header.minLat, header.maxLon, header.maxLat];
-  const center = [header.centerLon, header.centerLat, header.centerZoom];
-
-  metadata['bounds'] = bounds;
-  metadata['center'] = center;
+  metadata['format'] = GetPmtilesTileType(header.tileType).type;
   metadata['minzoom'] = header.minZoom;
   metadata['maxzoom'] = header.maxZoom;
-  metadata['format'] = GetPmtilesTileType(header.tileType).type;
+  console.log('maxzoom:' + header.maxZoom)
+
+  if(header.minLon && header.minLat && header.maxLon && header.maxLat) {
+    metadata['bounds'] = [header.minLon, header.minLat, header.maxLon, header.maxLat];
+  } else {
+    metadata['bounds'] = [-180, -85.05112877980659, 180, 85.0511287798066];
+  }
+
+  if(header.centerLon && header.centerLat && header.centerZoom) {
+    metadata['center'] = [header.centerLon, header.centerLat, header.centerZoom];
+  } else {
+    metadata['center'] = [
+      (parseInt(metadata['bounds'][0]) + parseInt(metadata['bounds'][2])) / 2,
+      (parseInt(metadata['bounds'][1]) + parseInt(metadata['bounds'][3])) / 2,
+      parseInt(metadata['maxzoom']) / 2,
+    ];
+  }
 
   return metadata;
 };
