@@ -67,7 +67,7 @@ export const GetPMtilesTile = async (pmtiles, z, x, y) => {
   const header = await pmtiles.getHeader();
   const TileType = GetPmtilesTileType(header.tileType);
   let zxyTile = await pmtiles.getZxy(z, x, y);
-  if (zxyTile.data !== undefined) {
+  if (zxyTile && zxyTile.data) {
     zxyTile = ArrayBufferToBuffer(zxyTile.data);
   } else {
     zxyTile = undefined;
@@ -91,7 +91,7 @@ const GetPmtilesTileType = (typenum) => {
       head['Content-Type'] = 'image/png';
       break;
     case 3:
-      tileType = 'jpg';
+      tileType = 'jpeg';
       head['Content-Type'] = 'image/jpeg';
       break;
     case 4:
