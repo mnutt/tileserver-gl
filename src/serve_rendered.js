@@ -1465,8 +1465,8 @@ export const serve_rendered = {
 
     const queue = [];
     for (const name of Object.keys(styleJSON.sources)) {
-      const source = styleJSON.sources[name];
       const url = source.url;
+      let source = styleJSON.sources[name];
       let source_type;
 
       if (url && (url.lastIndexOf('pmtiles:', 0) === 0 || url.lastIndexOf('mbtiles:', 0) === 0)) {
