@@ -85,7 +85,7 @@ const startServer = (configPath, config) => {
   });
 };
 
-const startWithinputFile = async (inputFile) => {
+const startWithInputFile = async (inputFile) => {
   console.log(`[INFO] Automatically creating config file for ${inputFile}`);
   console.log(`[INFO] Only a basic preview style will be used.`);
   console.log(
@@ -124,7 +124,6 @@ const startWithinputFile = async (inputFile) => {
     styles: {},
     data: {},
   };
-
   const extension = inputFile.split('.').pop().toLowerCase();
   if (extension === 'pmtiles') {
     let FileOpenInfo = PMtilesOpen(inputFile);
@@ -257,7 +256,7 @@ fs.stat(path.resolve(opts.config), (err, stats) => {
     }
 
     if (inputFile) {
-      return startWithinputFile(inputFile);
+      return startWithInputFile(inputFile);
     } else {
       // try to find in the cwd
       const files = fs.readdirSync(process.cwd());
@@ -272,7 +271,7 @@ fs.stat(path.resolve(opts.config), (err, stats) => {
       }
       if (inputFile) {
         console.log(`No input file specified, using ${inputFile}`);
-        return startWithinputFile(inputFile);
+        return startWithInputFile(inputFile);
       } else {
         const url =
           'https://github.com/maptiler/tileserver-gl/releases/download/v1.3.0/zurich_switzerland.mbtiles';
@@ -280,7 +279,7 @@ fs.stat(path.resolve(opts.config), (err, stats) => {
         const stream = fs.createWriteStream(filename);
         console.log(`No input file found`);
         console.log(`[DEMO] Downloading sample data (${filename}) from ${url}`);
-        stream.on('finish', () => startWithinputFile(filename));
+        stream.on('finish', () => startWithInputFile(filename));
         return request.get(url).pipe(stream);
       }
     }
