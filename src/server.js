@@ -451,54 +451,54 @@ function start(opts) {
   };
 
   serveTemplate('/$', 'index', (req) => {
-    const styles = clone(serving.styles || {});
-    for (const id of Object.keys(styles)) {
-      const style = styles[id];
-      style.name = (serving.styles[id] || serving.rendered[id] || {}).name;
-      style.serving_data = serving.styles[id];
-      style.serving_rendered = serving.rendered[id];
-      if (style.serving_rendered) {
-        const center = style.serving_rendered.tileJSON.center;
+    let styles = {}
+    for (const id of Object.keys(serving.styles || {})) {
+      styles[id] = Object.assign({}, serving.styles[id]);
+      styles[id].serving_data = serving.styles[id];
+      styles[id].serving_rendered = serving.rendered[id];
+      if (styles[id].serving_rendered) {
+        const center = styles[id].serving_rendered.tileJSON.center;
         if (center) {
-          style.viewer_hash = `#${center[2]}/${center[1].toFixed(
+          styles[id].viewer_hash = `#${center[2]}/${center[1].toFixed(
             5,
           )}/${center[0].toFixed(5)}`;
 
           const centerPx = mercator.px([center[0], center[1]], center[2]);
-          style.thumbnail = `${center[2]}/${Math.floor(
+          styles[id].thumbnail = `${center[2]}/${Math.floor(
             centerPx[0] / 256,
           )}/${Math.floor(centerPx[1] / 256)}.png`;
         }
 
-        style.xyz_link = getTileUrls(
+        styles[id].xyz_link = getTileUrls(
           req,
-          style.serving_rendered.tileJSON.tiles,
+          styles[id].serving_rendered.tileJSON.tiles,
           `styles/${id}`,
-          style.serving_rendered.tileJSON.format,
+          styles[id].serving_rendered.tileJSON.format,
           opts.publicUrl,
         )[0];
       }
     }
-    const data = clone(serving.data || {});
-    for (const id of Object.keys(data)) {
-      const data_ = data[id];
-      const tilejson = data[id].tileJSON;
-      const center = tilejson.center;
+
+    let data = {}
+    for (const id of Object.keys(serving.data || {})) {
+      data[id] = Object.assign({}, serving.data[id]);
+      let tilejson = Object.assign({}, serving.data[id].tileJSON);
+      const center = data[id].tilejson.center;
       if (center) {
-        data_.viewer_hash = `#${center[2]}/${center[1].toFixed(
+        data[id].viewer_hash = `#${center[2]}/${center[1].toFixed(
           5,
         )}/${center[0].toFixed(5)}`;
       }
-      data_.is_vector = tilejson.format === 'pbf';
-      if (!data_.is_vector) {
+      data[id].is_vector = tilejson.format === 'pbf';
+      if (!data[id].is_vector) {
         if (center) {
           const centerPx = mercator.px([center[0], center[1]], center[2]);
-          data_.thumbnail = `${center[2]}/${Math.floor(
+          data[id].thumbnail = `${center[2]}/${Math.floor(
             centerPx[0] / 256,
-          )}/${Math.floor(centerPx[1] / 256)}.${data_.tileJSON.format}`;
+          )}/${Math.floor(centerPx[1] / 256)}.${tilejson.format}`;
         }
 
-        data_.xyz_link = getTileUrls(
+        data[id].xyz_link = getTileUrls(
           req,
           tilejson.tiles,
           `data/${id}`,
@@ -509,7 +509,7 @@ function start(opts) {
           },
         )[0];
       }
-      if (data_.filesize) {
+      if (data[id].filesize) {
         let suffix = 'kB';
         let size = parseInt(data_.filesize, 10) / 1024;
         if (size > 1024) {
@@ -520,13 +520,10 @@ function start(opts) {
           suffix = 'GB';
           size /= 1024;
         }
-        data_.formatted_filesize = `${size.toFixed(2)} ${suffix}`;
-        data_.extension = tilejson.extension;
-      }
-      if (tilejson.extension) {
-        data_.extension = tilejson.extension;
+        data[id].formatted_filesize = `${size.toFixed(2)} ${suffix}`;
       }
     }
+
     return {
       styles: Object.keys(styles).length ? styles : null,
       data: Object.keys(data).length ? data : null,

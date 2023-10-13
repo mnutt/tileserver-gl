@@ -78,7 +78,7 @@
           {{/if}}
           <div class="details">
             <h3>{{name}}</h3>
-            <p class="identifier">identifier: {{@key}}{{#if formatted_filesize}} | size: {{formatted_filesize}}{{/if}} | type: {{#is_vector}}vector{{/is_vector}}{{^is_vector}}raster{{/is_vector}} data {{#if extension}} | ext: {{extension}}{{/if}}</p>
+            <p class="identifier">identifier: {{@key}}{{#if formatted_filesize}} | size: {{formatted_filesize}}{{/if}} | type: {{#is_vector}}vector{{/is_vector}}{{^is_vector}}raster{{/is_vector}} data {{#if source_type}} | ext: {{source_type}}{{/if}}</p>
             <p class="services">
               services: <a href="{{public_url}}data/{{@key}}.json{{&../key_query}}">TileJSON</a>
               {{#if wmts_link}}
