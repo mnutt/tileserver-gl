@@ -451,7 +451,7 @@ function start(opts) {
   };
 
   serveTemplate('/$', 'index', (req) => {
-    let styles = {}
+    let styles = {};
     for (const id of Object.keys(serving.styles || {})) {
       styles[id] = Object.assign({}, serving.styles[id]);
       styles[id].serving_data = serving.styles[id];
@@ -479,7 +479,7 @@ function start(opts) {
       }
     }
 
-    let data = {}
+    let data = {};
     for (const id of Object.keys(serving.data || {})) {
       data[id] = Object.assign({}, serving.data[id]);
       let tilejson = Object.assign({}, serving.data[id].tileJSON);
