@@ -483,7 +483,7 @@ function start(opts) {
     for (const id of Object.keys(serving.data || {})) {
       data[id] = Object.assign({}, serving.data[id]);
       let tilejson = Object.assign({}, serving.data[id].tileJSON);
-      const center = data[id].tilejson.center;
+      const center = tilejson.center;
       if (center) {
         data[id].viewer_hash = `#${center[2]}/${center[1].toFixed(
           5,
